@@ -1,17 +1,27 @@
-# Bonnibel — Backend (placeholder)
+# Bonnibel — Backend
 
-Folder zarezerwowany na backend systemu Bonnibel. Stack jeszcze nie został
-zdecydowany — do uzupełnienia po podjęciu decyzji.
+Folder zawierający kod źródłowy backendu systemu Bonnibel.
 
-## Co tu się znajdzie (na podstawie dokumentacji)
+## Wybrany stos technologiczny (Stack)
 
-Architektura warstwowa (layered) z modułami:
+- **Język i framework:** Python 3 + FastAPI
+- **Baza danych:** PostgreSQL
+- **ORM / query builder:** SQLAlchemy
+- **Mechanizm migracji:** Alembic
+- **WebSocket:** Natywny mechanizm `fastapi.WebSocket`
+- **Sposób uruchamiania:** Docker Compose (zintegrowany ze środowiskiem bazy danych i frontendem)
 
-- **REST Controllers** — przyjmowanie żądań od klienta frontendowego
+Powyzsza propozycja wykorzystania natywnego mechanizmu `fastapi.WebSocket` oraz Docker Compose to wstępny pomysł.
+
+## Architektura i moduły systemu
+
+Zastosowano architekturę warstwową (layered) z podziałem na moduły biznesowe.
+
+- **REST Controllers (Routers)** — przyjmowanie żądań od klienta frontendowego (`router.py` w modułach)
 - **Hook Handlers** — odbiór webhooków z Git / Jira
-- **Auth Module** — `AuthService`, `AuthGuard`, JWT, `PermissionService`
+- **Auth Module** — `AuthService`, `AuthGuard` (wstrzykiwany jako zależność FastAPI), JWT, `PermissionService`
 - **Hook Auth Module** — weryfikacja podpisów webhooków (HMAC per provider)
-- **Business Modules** — logika biznesowa:
+- **Business Modules** — logika biznesowa (pliki `service.py`):
   - `ProjectService`
   - `MembershipService`
   - `UserService`
@@ -22,21 +32,74 @@ Architektura warstwowa (layered) z modułami:
   - `AnalyticsService`
 - **Integration Module** — `GitIntegrationClient`, `JiraIntegrationClient`,
   `ConfluenceIntegrationClient`, wspólny `HttpClient`, `ConfigRepository`
-- **Notification Module** — `NotificationService`, `WSModule` (WebSocket),
+- **Notification Module** — `NotificationService`, `WSModule` (obsługa WebSocket),
   `RecipientResolver`, `OnlineRepository`, `NotificationRepository`
-- **Database** — encje: `Project`, `ProjectMember`, `User`, `Auth`, `Task`,
+- **Database** — encje definiowane przez SQLAlchemy: `Project`, `ProjectMember`, `User`, `Auth`, `Task`,
   `TaskHistory`, `PullRequest`, `ChatMessage`, `Notification`,
   `TaskSubscription`, `ProjectIntegration`, `WebhookSecret`, `Docs`
 
-## Do decyzji
+## Struktura katalogów backendu
 
-- [ ] Język + framework (kandydaci: Spring Boot, NestJS, FastAPI, Go, …)
-- [ ] Baza danych (PostgreSQL prawdopodobnie)
-- [ ] ORM / query builder
-- [ ] Mechanizm migracji
-- [ ] WebSocket (natywny / Socket.IO / STOMP)
-- [ ] Sposób uruchamiania (Docker Compose razem z frontendem?)
+Poniżej znajduje się szczegółowy podział struktury katalogów dla aplikacji opartej na FastAPI i SQLAlchemy. Zastosowano architekturę z podziałem na moduły biznesowe (Domain-Driven Design), co zapewnia czytelną separację logiki poszczególnych domen.
 
-## Status
+```text
+bonnibel-backend/
+├── alembic/                    # Konfiguracja i pliki migracji bazy danych (Alembic)
+│   ├── versions/               # Wygenerowane pliki migracji (np. tworzenie nowych tabel)
+│   └── env.py                  # Skrypt ładujący modele SQLAlchemy na potrzeby generowania migracji
+│
+├── app/
+│   ├── core/                   # Globalna konfiguracja i fundamenty aplikacji
+│   │   ├── config.py           # Wczytywanie i walidacja zmiennych środowiskowych (Pydantic BaseSettings)
+│   │   ├── database.py         # Inicjalizacja silnika SQLAlchemy i sesji bazy danych
+│   │   └── security.py         # Konfiguracja algorytmów hashowania haseł i mechanizmów JWT
+│   │
+│   ├── dependencies/           # Współdzielone funkcje wstrzykiwania zależności (Dependency Injection)
+│   │   ├── auth.py             # Implementacja AuthGuard (weryfikacja tokenów i uprawnień)
+│   │   └── db.py               # Dostarczanie sesji bazy danych do routerów
+│   │
+│   ├── modules/                # Logika biznesowa pogrupowana w domeny
+│   │   │
+│   │   ├── auth/               # Zarządzanie tożsamością i dostępem
+│   │   │   ├── router.py       # REST Controllers (np. POST /login, POST /register)
+│   │   │   ├── service.py      # AuthService (weryfikacja logowania, generowanie tokenów)
+│   │   │   ├── schemas.py      # DTO (Pydantic): definicje payloadów wejściowych i wyjściowych
+│   │   │   └── models.py       # Tabele SQLAlchemy: User, Auth, WebhookSecret
+│   │   │
+│   │   ├── hook_auth/          # Walidacja zdarzeń zewnętrznych (Webhooki)
+│   │   │   ├── router.py       # Hook Handlers: endpointy przyjmujące powiadomienia
+│   │   │   ├── verifier.py     # Weryfikacja sygnatur (HMAC per provider)
+│   │   │   └── schemas.py      # DTO dla struktur danych przesyłanych przez zewnętrzne API
+│   │   │
+│   │   ├── integration/        # Połączenia z zewnętrznymi narzędziami
+│   │   │   ├── router.py       # Endpointy do zarządzania integracjami projektów
+│   │   │   ├── service.py      # Logika biznesowa integracji
+│   │   │   ├── clients.py      # Klienci HTTP (GitIntegrationClient, JiraIntegrationClient)
+│   │   │   ├── schemas.py      # DTO dla modułu integracji
+│   │   │   └── models.py       # Tabele SQLAlchemy: ProjectIntegration
+│   │   │
+│   │   ├── logic/              # Główna logika systemu (Zadania, Projekty, Pull Requesty)
+│   │   │   ├── router.py       # REST Controllers dla projektów i zadań
+│   │   │   ├── service.py      # ProjectService, TaskService, MembershipService, DocsService
+│   │   │   ├── repository.py   # Warstwa abstrakcji dla złożonych zapytań SQL do bazy
+│   │   │   ├── schemas.py      # DTO zadań, projektów i historii
+│   │   │   └── models.py       # Tabele SQLAlchemy: Project, ProjectMember, Task, TaskHistory, PullRequest, Docs
+│   │   │
+│   │   └── notification/       # Obsługa czasu rzeczywistego i komunikacji
+│   │       ├── router.py       # Endpointy HTTP (np. pobieranie historii powiadomień)
+│   │       ├── ws.py           # WSModule: punkt wejścia dla połączeń WebSocket
+│   │       ├── manager.py      # NotificationService, ChatService, RecipientResolver (zarządzanie sesjami)
+│   │       └── models.py       # Tabele SQLAlchemy: ChatMessage, Notification, TaskSubscription
+│   │
+│   └── main.py                 # Główny plik aplikacji, inicjalizacja FastAPI i rejestracja wszystkich routerów
+│
+├── tests/                      # Katalog testów automatycznych (Pytest)
+│   ├── conftest.py             # Konfiguracja środowiska testowego (np. testowa baza w pamięci) i fixtury
+│   ├── modules/                # Testy integracyjne podzielone zgodnie z modułami w aplikacji
+│   └── core/                   # Testy jednostkowe konfiguracji bazowej i bezpieczeństwa
+│
+├── alembic.ini                 # Główny plik konfiguracyjny mechanizmu migracji Alembic
+├── requirements.txt            # Lista pakietów i ich wersji
+├── .env                        # Lokalne zmienne środowiskowe (nie są objęte kontrolą wersji)
+└── .gitignore                  # Definicje plików i katalogów ignorowanych przez repozytorium Git
 
-Pusto — czekamy na decyzję zespołu o stacku.
