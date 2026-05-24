@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { mockUsers } from '@/mocks/mockData'
+import { userService } from '@/services/userService'
 import type { User, UserStatus } from '@/types/domain'
 
 export default function ProfilePage() {
@@ -14,18 +14,16 @@ export default function ProfilePage() {
   const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const currentUser = mockUsers.find(u => u.userId === 'user-1')
-      if (currentUser) {
+    setLoading(true)
+    userService.getCurrentUser()
+      .then(currentUser => {
         setUser(currentUser)
         setName(currentUser.name)
         setSurname(currentUser.surname)
         setStatus(currentUser.status)
-      }
-      setLoading(false)
-    }, 300)
-
-    return () => clearTimeout(timer)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
   }, [])
 
   const handleSave = async (e: React.FormEvent) => {
@@ -35,20 +33,15 @@ export default function ProfilePage() {
     setSaving(true)
     setSuccessMessage('')
 
-    setTimeout(() => {
-      const userIndex = mockUsers.findIndex(u => u.userId === user.userId)
-      if (userIndex !== -1) {
-        mockUsers[userIndex] = {
-          ...mockUsers[userIndex],
-          name,
-          surname,
-          status
-        }
-        setUser(mockUsers[userIndex])
-        setSuccessMessage('Profil został pomyślnie zaktualizowany!')
-      }
+    try {
+      const updatedUser = await userService.updateCurrentUser({ name, surname, status })
+      setUser(updatedUser)
+      setSuccessMessage('Profil został pomyślnie zaktualizowany na serwerze!')
+    } catch (err) {
+      console.error("Błąd zapisu profilu:", err)
+    } finally {
       setSaving(false)
-    }, 500)
+    }
   }
 
   const handleLogout = () => {

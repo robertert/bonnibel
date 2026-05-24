@@ -1,5 +1,5 @@
 // TODO: kiedy wybierzemy backend, podstawić właściwy base URL i interceptor auth.
-export const API_BASE_URL = '/api'
+export const API_BASE_URL = 'http://localhost:3001'
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
