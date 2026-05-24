@@ -1,8 +1,212 @@
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { mockUsers } from '@/mocks/mockData'
+import type { User, UserStatus } from '@/types/domain'
+
 export default function ProfilePage() {
+  const navigate = useNavigate()
+  const [user, setUser] = useState<User | null>(null)
+  const [name, setName] = useState('')
+  const [surname, setSurname] = useState('')
+  const [status, setStatus] = useState<UserStatus>('AVAILABLE')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentUser = mockUsers.find(u => u.userId === 'user-1')
+      if (currentUser) {
+        setUser(currentUser)
+        setName(currentUser.name)
+        setSurname(currentUser.surname)
+        setStatus(currentUser.status)
+      }
+      setLoading(false)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+
+    setSaving(true)
+    setSuccessMessage('')
+
+    setTimeout(() => {
+      const userIndex = mockUsers.findIndex(u => u.userId === user.userId)
+      if (userIndex !== -1) {
+        mockUsers[userIndex] = {
+          ...mockUsers[userIndex],
+          name,
+          surname,
+          status
+        }
+        setUser(mockUsers[userIndex])
+        setSuccessMessage('Profil został pomyślnie zaktualizowany!')
+      }
+      setSaving(false)
+    }, 500)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('refreshToken')
+    localStorage.removeItem('accessToken')
+    navigate('/login')
+  }
+
+  if (loading) {
+    return <div style={{ padding: '24px', textAlign: 'center' }}>Ładowanie danych profilu...</div>
+  }
+
+  if (!user) {
+    return <div style={{ padding: '24px', textAlign: 'center', color: 'red' }}>Nie odnaleziono profilu użytkownika.</div>
+  }
+
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-semibold mb-4 text-blue-600">Profil użytkownika</h1>
-      <p className="text-gray-500">TODO: dane profilu, edycja, status dostępności</p>
+    <div style={{ padding: '24px', maxWidth: '600px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+      <h2 style={{ marginBottom: '24px', color: '#1a202c' }}>Mój Profil</h2>
+
+      <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+        <form onSubmit={handleSave}>
+          {successMessage && (
+            <div style={{ padding: '12px', background: '#e6fffa', color: '#319795', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', marginBottom: '16px' }}>
+              {successMessage}
+            </div>
+          )}
+
+          {/* E-mail (tylko do odczytu) */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#4a5568', marginBottom: '6px' }}>
+              Adres e-mail (brak możliwości edycji)
+            </label>
+            <input
+              type="email"
+              value={user.email}
+              disabled
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                border: '1px solid #e2e8f0',
+                background: '#f7fafc',
+                color: '#718096',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          {/* Imię */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#4a5568', marginBottom: '6px' }}>
+              Imię
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                border: '1px solid #cbd5e0',
+                background: '#ffffff',
+                color: '#1a202c',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          {/* Nazwisko */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#4a5568', marginBottom: '6px' }}>
+              Nazwisko
+            </label>
+            <input
+              type="text"
+              value={surname}
+              onChange={(e) => setSurname(e.target.value)}
+              required
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                border: '1px solid #cbd5e0',
+                background: '#ffffff',
+                color: '#1a202c',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          {/* Status Dostępności */}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#4a5568', marginBottom: '6px' }}>
+              Status dostępności w zespole
+            </label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as UserStatus)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                border: '1px solid #cbd5e0',
+                background: '#ffffff',
+                color: '#1a202c',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="AVAILABLE" style={{ color: '#1a202c', backgroundColor: '#ffffff' }}>Dostępny (AVAILABLE)</option>
+              <option value="BUSY" style={{ color: '#1a202c', backgroundColor: '#ffffff' }}>Zajęty (BUSY)</option>
+              <option value="OPEN_TO_TASKS" style={{ color: '#1a202c', backgroundColor: '#ffffff' }}>Wolny do zadań (OPEN_TO_TASKS)</option>
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '32px' }}>
+            <button
+              type="submit"
+              disabled={saving}
+              style={{
+                padding: '10px 20px',
+                background: '#0070f3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}
+            >
+              {saving ? 'Zapisywanie...' : 'Zapisz zmiany'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              style={{
+                padding: '10px 20px',
+                background: '#fff',
+                color: '#e53e3e',
+                border: '1px solid #fc8181',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px'
+              }}
+            >
+              Wyloguj się
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
