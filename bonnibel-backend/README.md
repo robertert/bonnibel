@@ -40,6 +40,13 @@ Zastosowano architekturę warstwową (layered) z podziałem na moduły biznesowe
 
 ## Struktura katalogów backendu
 
+Struktura opiera się na izolacji modułów:
+
+- `app/core/` — konfiguracja globalna (zmienne środowiskowe, połączenie DB).
+- `app/dependencies/` — współdzielone funkcje dla *Dependency Injection*.
+- `app/modules/` — poszczególne domeny systemu (auth, logic, integration, notification).
+- `alembic/` — wersjonowanie schematu bazy danych.
+
 Poniżej znajduje się szczegółowy podział struktury katalogów dla aplikacji opartej na FastAPI i SQLAlchemy. Zastosowano architekturę z podziałem na moduły biznesowe (Domain-Driven Design), co zapewnia czytelną separację logiki poszczególnych domen.
 
 ```text
