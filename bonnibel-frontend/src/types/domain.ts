@@ -67,3 +67,16 @@ export interface TaskHistory {
   description: string;
   url: string;
 }
+
+
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  userId: string;
+}

@@ -1,8 +1,50 @@
-export default function SignupPage() {
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import { authService } from '@/services/authService';
+import { useAuthStore } from '../store/authStore';
+
+export const SignupPage = () => {
+  const loginInStore = useAuthStore((state) => state.login);
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+  
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm();
+
+  const onSubmit = async (data: any) => {
+    setError(null);
+    try {
+      const res = await authService.signup(data.userId, data.password);
+      // Logujemy użytkownika wstępnie (mamy tokeny)
+      loginInStore(res.accessToken, res.refreshToken, res.userId);
+      // Przekierowujemy do obowiązkowego kroku 2: uzupełnienie danych profilu
+      navigate('/profile-setup');
+    } catch (err: any) {
+      setError('Identyfikator użytkownika jest już zajęty.');
+    }
+  };
+
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-semibold mb-4">Rejestracja</h1>
-      <p className="text-gray-500">TODO: formularz rejestracji</p>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-sm p-6 bg-white rounded shadow-md">
+        <h2 className="mb-6 text-2xl font-bold text-center text-gray-800">Rejestracja - Bonnibel</h2>
+        
+        <div className="mb-4">
+          <label className="block mb-2 text-sm font-medium text-gray-700">Wybierz Identyfikator (Login):</label>
+          <input {...register('userId', { required: true })} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+
+        <div className="mb-4">
+          <label className="block mb-2 text-sm font-medium text-gray-700">Hasło:</label>
+          <input type="password" {...register('password', { required: true })} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+
+        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+
+        <button type="submit" disabled={isSubmitting} className="w-full py-2 text-white bg-green-600 rounded-md hover:bg-green-700 disabled:bg-green-300">
+          {isSubmitting ? 'Tworzenie konta...' : 'Zarejestruj się'}
+        </button>
+      </form>
     </div>
-  )
-}
+  );
+};

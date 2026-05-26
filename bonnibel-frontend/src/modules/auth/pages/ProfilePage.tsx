@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { userService } from '@/services/userService'
+import { useAuthStore } from '../store/authStore' // 1. IMPORT TWOJEGO STORE'A
 import type { User, UserStatus } from '@/types/domain'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
+  
+  // 2. WYCIĄGAMY FUNKCJĘ WYLOGOWANIA ZE STORE'A
+  const logoutInStore = useAuthStore((state) => state.logout)
+  
   const [user, setUser] = useState<User | null>(null)
   const [name, setName] = useState('')
   const [surname, setSurname] = useState('')
+  const [email, setEmail] = useState('')
   const [status, setStatus] = useState<UserStatus>('AVAILABLE')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -18,11 +24,26 @@ export default function ProfilePage() {
     userService.getCurrentUser()
       .then(currentUser => {
         setUser(currentUser)
-        setName(currentUser.name)
-        setSurname(currentUser.surname)
-        setStatus(currentUser.status)
+        setName(currentUser.name || '')
+        setSurname(currentUser.surname || '')
+        setEmail(currentUser.email || '')
+        setStatus(currentUser.status || 'AVAILABLE')
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error("Błąd ładowania profilu:", err)
+        // 3. OBSŁUGA NOWEGO UŻYTKOWNIKA:
+        // Jeśli profilu nie ma (np. świeżo po rejestracji), tworzymy pusty obiekt placeholder,
+        // dzięki czemu strona się nie zablokuje i użytkownik uzupełni dane po raz pierwszy.
+        const cachedUserId = localStorage.getItem('userId') || 'nowy_użytkownik';
+        setUser({
+          userId: cachedUserId,
+          email: '',
+          name: '',
+          surname: '',
+          status: 'AVAILABLE',
+          isOnline: true
+        })
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -34,7 +55,7 @@ export default function ProfilePage() {
     setSuccessMessage('')
 
     try {
-      const updatedUser = await userService.updateCurrentUser({ name, surname, status })
+      const updatedUser = await userService.updateCurrentUser({ name, surname, status, email })
       setUser(updatedUser)
       setSuccessMessage('Profil został pomyślnie zaktualizowany na serwerze!')
     } catch (err) {
@@ -44,9 +65,9 @@ export default function ProfilePage() {
     }
   }
 
+  // 4. POPRAWIONE WYLOGOWANIE KORZYSTAJĄCE Z CENTRALNEGO AUTORYZOWANEGO SYSTEMU
   const handleLogout = () => {
-    localStorage.removeItem('refreshToken')
-    localStorage.removeItem('accessToken')
+    logoutInStore() // To czyści cały localStorage oraz przestawia stan aplikacji w Zustand
     navigate('/login')
   }
 
@@ -70,22 +91,24 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* E-mail (tylko do odczytu) */}
+          {/* E-mail */}
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#4a5568', marginBottom: '6px' }}>
-              Adres e-mail (brak możliwości edycji)
+              Adres e-mail
             </label>
             <input
               type="email"
-              value={user.email}
-              disabled
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="np. jan.kowalski@example.com"
               style={{
                 width: '100%',
                 padding: '10px 12px',
                 borderRadius: '6px',
-                border: '1px solid #e2e8f0',
-                background: '#f7fafc',
-                color: '#718096',
+                border: '1px solid #cbd5e0', // Ładniejsza, wyraźniejsza ramka
+                background: '#ffffff',       // Zmienione na białe tło - sygnalizuje możliwość pisania
+                color: '#1a202c',            // Zmienione na ciemny tekst
                 fontSize: '14px',
                 boxSizing: 'border-box'
               }}
