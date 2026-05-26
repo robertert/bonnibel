@@ -8,7 +8,7 @@ export const LoginPage = () => {
   const loginInStore = useAuthStore((state) => state.login);
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
-  
+  const [showPassword, setShowPassword] = useState(false);
   const { register, handleSubmit, formState: { isSubmitting } } = useForm();
 
   const onSubmit = async (data: any) => {
@@ -31,12 +31,27 @@ export const LoginPage = () => {
         
         <div className="mb-4">
           <label className="block mb-2 text-sm font-medium text-gray-700">Identyfikator użytkownika:</label>
-          <input {...register('userId', { required: true })} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 " style={{ borderColor: '#acc6ec' }} />
+          <input {...register('userId', { required: true })} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 " style={{ borderColor: '#acc6ec', color: 'black' }} />
         </div>
 
         <div className="mb-4">
           <label className="block mb-2 text-sm font-medium text-gray-700">Hasło:</label>
-          <input type="password" {...register('password', { required: true })} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" style={{ borderColor: '#acc6ec' }} />
+          <div className="relative">
+            <input 
+              type={showPassword ? 'text' : 'password'} 
+              {...register('password', { required: true })} 
+              className="w-full px-3 py-2 pr-12 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              style={{ borderColor: '#acc6ec', color: 'black', backgroundColor: 'white' }} 
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-gray-500 hover:text-gray-700"
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              {showPassword ? 'Ukryj' : 'Pokaż'}
+            </button>
+          </div>
         </div>
 
         {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
