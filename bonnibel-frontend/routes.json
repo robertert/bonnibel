@@ -4,5 +4,6 @@
   "/projects/:projectId/tasks/:id/reviewer": "/tasks/:id",
   "/projects/:projectId/tasks/:id/request-close": "/tasks/:id",
   "/projects/:projectId/tasks/:id": "/tasks/:id",
-  "/projects/:projectId/tasks": "/tasks?projectId=:projectId"
+  "/projects/:projectId/tasks": "/tasks?projectId=:projectId",
+  "/projects/:projectId/tasks/:taskId/messages": "/chatMessages?taskId=:taskId&_sort=createdAt&_order=asc"
 }

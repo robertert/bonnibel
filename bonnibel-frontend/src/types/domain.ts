@@ -19,6 +19,8 @@ export type TaskEventType =
   | 'PR_OPENED'
   | 'PR_MERGED'
   | 'DOCS_ADDED'
+  | 'TASK_CLOSED'
+  | 'CHAT_MESSAGE_CREATED'
 
 
 export interface User {
@@ -79,4 +81,32 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   userId: string;
+}
+
+export interface ChatMessage {
+  messageId: number;
+  taskId: number;
+  authorId: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface AnalyticsTaskCount {
+  projectId: number;
+  taskCount: number;
+}
+
+export type AnalyticsByStatus = Partial<Record<TaskStatus, number>> & {
+  TODO: number;
+  IN_PROGRESS: number;
+  IN_REVIEW: number;
+  DONE: number;
+  CLOSED: number;
+}
+
+export type AnalyticsByAssignee = Record<string, number>
+
+export interface AnalyticsCommits {
+  commitCount: number;
+  byActor: Record<string, number>;
 }
