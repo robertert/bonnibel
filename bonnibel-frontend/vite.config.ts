@@ -11,4 +11,11 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    watch: {
+      // json-server zapisuje POST-y do db.json (i czasem routes.json).
+      // Bez tego Vite robi full reload przy każdym sendMessage.
+      ignored: ['**/db.json', '**/routes.json'],
+    },
+  },
 })

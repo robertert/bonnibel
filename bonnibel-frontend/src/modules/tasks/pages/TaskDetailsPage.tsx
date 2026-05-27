@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { taskService } from '@/services/taskService'
+import TaskChat from '@/modules/chat/components/TaskChat'
 import type { Task, TaskStatus } from '@/types/domain'
 
 export default function TaskDetailsPage() {
@@ -97,6 +98,10 @@ export default function TaskDetailsPage() {
             </span>
           </div>
         </div>
+      </div>
+
+      <div style={{ marginTop: '24px' }}>
+        <TaskChat projectId={Number(projectId)} taskId={task.taskId} />
       </div>
     </div>
   )

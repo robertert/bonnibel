@@ -3,6 +3,7 @@
     {
       "id": 1,
       "projectId": 1,
+      "ownerId": "user-1",
       "name": "Bonnibel",
       "description": "System zarządzania postępem prac zespołu"
     }
@@ -73,13 +74,28 @@
       "projectId": 1,
       "title": "Stworzenie widoku Tablicy Zadań (Kanban)",
       "description": "Zaprojektowanie i oprogramowanie komponentów tablicy z podziałem na kolumny Todo/Progress/Review/Done.",
-      "status": "TODO",
+      "status": "IN_PROGRESS",
       "assigneeId": "user-1",
       "reviewerId": null,
       "gitBranchName": null,
       "jiraIssueKey": "BON-103",
       "createdAt": "2026-05-23T15:00:00.000Z",
-      "updatedAt": "2026-05-23T15:00:00.000Z",
+      "updatedAt": "2026-05-26T14:20:34.240Z",
+      "closedAt": null
+    },
+    {
+      "id": 104,
+      "taskId": 104,
+      "projectId": 1,
+      "title": "Moduł Chat & Analytics",
+      "description": "Implementacja czatu zadania (REST + WS) oraz strony analityki projektu.",
+      "status": "IN_REVIEW",
+      "assigneeId": "user-1",
+      "reviewerId": "user-2",
+      "gitBranchName": "feature/bon-104-chat-analytics",
+      "jiraIssueKey": "BON-104",
+      "createdAt": "2026-05-25T09:00:00.000Z",
+      "updatedAt": "2026-05-26T14:00:00.000Z",
       "closedAt": null
     }
   ],
@@ -92,7 +108,288 @@
       "actorId": "user-1",
       "title": "Utworzono zadanie",
       "description": "Zadanie zostało pomyślnie zainicjowane przez system",
-      "url": ""
+      "url": "",
+      "createdAt": "2026-05-20T10:00:00.000Z"
+    },
+    {
+      "id": 1002,
+      "eventId": 1002,
+      "taskId": 101,
+      "type": "COMMIT",
+      "actorId": "user-3",
+      "title": "init: boilerplate",
+      "description": "Pierwszy commit z konfiguracją Vite",
+      "url": "https://github.com/example/bonnibel/commit/abc123",
+      "createdAt": "2026-05-20T13:00:00.000Z"
+    },
+    {
+      "id": 1003,
+      "eventId": 1003,
+      "taskId": 101,
+      "type": "COMMIT",
+      "actorId": "user-3",
+      "title": "chore: tsconfig + eslint",
+      "description": "Konfiguracja TS i lintera",
+      "url": "https://github.com/example/bonnibel/commit/def456",
+      "createdAt": "2026-05-21T09:00:00.000Z"
+    },
+    {
+      "id": 1004,
+      "eventId": 1004,
+      "taskId": 101,
+      "type": "PR_MERGED",
+      "actorId": "user-1",
+      "title": "Merge PR #1 — boilerplate",
+      "description": "Zatwierdzono i scalono boilerplate",
+      "url": "https://github.com/example/bonnibel/pull/1",
+      "createdAt": "2026-05-21T11:30:00.000Z"
+    },
+    {
+      "id": 1005,
+      "eventId": 1005,
+      "taskId": 101,
+      "type": "TASK_CLOSED",
+      "actorId": "user-1",
+      "title": "Zamknięto zadanie",
+      "description": "Zadanie zakończone po scaleniu PR",
+      "url": "",
+      "createdAt": "2026-05-21T12:00:00.000Z"
+    },
+    {
+      "id": 1006,
+      "eventId": 1006,
+      "taskId": 102,
+      "type": "COMMIT",
+      "actorId": "user-2",
+      "title": "feat: login form",
+      "description": "Komponent logowania",
+      "url": "https://github.com/example/bonnibel/commit/ghi789",
+      "createdAt": "2026-05-23T15:00:00.000Z"
+    },
+    {
+      "id": 1007,
+      "eventId": 1007,
+      "taskId": 102,
+      "type": "COMMIT",
+      "actorId": "user-2",
+      "title": "feat: signup form",
+      "description": "Komponent rejestracji",
+      "url": "https://github.com/example/bonnibel/commit/jkl012",
+      "createdAt": "2026-05-24T10:00:00.000Z"
+    },
+    {
+      "id": 1008,
+      "eventId": 1008,
+      "taskId": 104,
+      "type": "COMMIT",
+      "actorId": "user-1",
+      "title": "feat(chat): TaskChat MVP",
+      "description": "REST + WS",
+      "url": "https://github.com/example/bonnibel/commit/mno345",
+      "createdAt": "2026-05-26T11:00:00.000Z"
+    }
+  ],
+  "chatMessages": [
+    {
+      "id": 5001,
+      "messageId": 5001,
+      "taskId": 101,
+      "authorId": "user-3",
+      "text": "Podbiłem wersje pakietów i wstępną strukturę katalogów.",
+      "createdAt": "2026-05-20T11:00:00.000Z"
+    },
+    {
+      "id": 5002,
+      "messageId": 5002,
+      "taskId": 101,
+      "authorId": "user-1",
+      "text": "Super, jutro zerknę i otworzymy PR-a.",
+      "createdAt": "2026-05-20T15:30:00.000Z"
+    },
+    {
+      "id": 5003,
+      "messageId": 5003,
+      "taskId": 102,
+      "authorId": "user-2",
+      "text": "Mam pytanie do refresh tokena — gdzie go trzymamy?",
+      "createdAt": "2026-05-23T16:00:00.000Z"
+    },
+    {
+      "id": 5004,
+      "messageId": 5004,
+      "taskId": 102,
+      "authorId": "user-1",
+      "text": "Na razie localStorage, później przejdziemy na httpOnly cookie.",
+      "createdAt": "2026-05-23T16:15:00.000Z"
+    },
+    {
+      "id": 5005,
+      "messageId": 5005,
+      "taskId": 104,
+      "authorId": "user-1",
+      "text": "Pierwsza wersja czatu i analytics jest gotowa do review.",
+      "createdAt": "2026-05-26T14:00:00.000Z"
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "test",
+      "createdAt": "2026-05-26T14:19:47.644Z",
+      "id": 5006
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "dsadas",
+      "createdAt": "2026-05-26T14:19:50.915Z",
+      "id": 5007
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "das",
+      "createdAt": "2026-05-26T14:19:53.199Z",
+      "id": 5008
+    },
+    {
+      "taskId": 104,
+      "authorId": "user-1",
+      "text": "test",
+      "createdAt": "2026-05-26T16:33:54.483Z",
+      "id": 5009
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "czemu",
+      "createdAt": "2026-05-26T16:34:11.566Z",
+      "id": 5010
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "test",
+      "createdAt": "2026-05-26T16:37:05.446Z",
+      "id": 5011
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "co tam",
+      "createdAt": "2026-05-26T16:37:09.863Z",
+      "id": 5012
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "d",
+      "createdAt": "2026-05-26T16:37:14.177Z",
+      "id": 5013
+    },
+    {
+      "taskId": 104,
+      "authorId": "user-1",
+      "text": "test",
+      "createdAt": "2026-05-26T16:37:22.980Z",
+      "id": 5014
+    },
+    {
+      "taskId": 104,
+      "authorId": "user-1",
+      "text": "test",
+      "createdAt": "2026-05-26T17:16:21.990Z",
+      "id": 5015
+    },
+    {
+      "taskId": 104,
+      "authorId": "user-1",
+      "text": "test",
+      "createdAt": "2026-05-26T17:16:27.816Z",
+      "id": 5016
+    },
+    {
+      "taskId": 104,
+      "authorId": "user-1",
+      "text": "tet",
+      "createdAt": "2026-05-26T17:17:29.085Z",
+      "id": 5017
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "t",
+      "createdAt": "2026-05-26T17:24:18.273Z",
+      "id": 5018
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "t",
+      "createdAt": "2026-05-26T17:24:24.655Z",
+      "id": 5019
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "t",
+      "createdAt": "2026-05-26T17:24:40.093Z",
+      "id": 5020
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "T",
+      "createdAt": "2026-05-26T17:27:13.057Z",
+      "id": 5021
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "D",
+      "createdAt": "2026-05-26T17:27:16.529Z",
+      "id": 5022
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "FDASASD",
+      "createdAt": "2026-05-26T17:27:21.190Z",
+      "id": 5023
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "DSAD",
+      "createdAt": "2026-05-26T17:27:23.888Z",
+      "id": 5024
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "TEST",
+      "createdAt": "2026-05-26T17:27:35.529Z",
+      "id": 5025
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "test",
+      "createdAt": "2026-05-26T17:32:29.334Z",
+      "id": 5026
+    },
+    {
+      "taskId": 103,
+      "authorId": "user-1",
+      "text": "cos tam",
+      "createdAt": "2026-05-26T17:32:37.794Z",
+      "id": 5027
+    },
+    {
+      "taskId": 104,
+      "authorId": "user-1",
+      "text": "co ta",
+      "createdAt": "2026-05-26T17:45:14.195Z",
+      "id": 5028
     }
   ]
 }
