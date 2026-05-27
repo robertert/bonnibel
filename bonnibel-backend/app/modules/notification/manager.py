@@ -303,81 +303,124 @@ class NotificationService:
         ]:
             self.subscribe(db, task_id, user_id)
 
-        notification_count = db.scalar(select(func.count()).select_from(Notification)) or 0
-        if notification_count == 0:
-            db.add_all(
-                [
-                    Notification(
-                        user_id="user-1",
-                        type=NotificationType.PR_CREATED,
-                        title="Nowy pull request",
-                        message="Użytkownik user-2 utworzył PR dla zadania BON-102.",
-                        link_url="/projects/1/tasks/102",
-                        is_read=False,
-                        is_delivered=False,
-                    ),
-                    Notification(
-                        user_id="user-2",
-                        type=NotificationType.PR_REVIEWED,
-                        title="Review zaakceptowane",
-                        message="Pull request dla BON-102 został zaakceptowany.",
-                        link_url="/projects/1/tasks/102",
-                        is_read=False,
-                        is_delivered=False,
-                    ),
-                    Notification(
-                        user_id="user-2",
-                        type=NotificationType.CHAT_MESSAGE,
-                        title="Nowa wiadomość",
-                        message="Użytkownik user-1 dodał wiadomość do zadania BON-102.",
-                        link_url="/projects/1/tasks/102",
-                        is_read=True,
-                        is_delivered=False,
-                    ),
-                    Notification(
-                        user_id="user-3",
-                        type=NotificationType.TASK_ASSIGNED,
-                        title="Przypisano zadanie",
-                        message="Zadanie BON-103 zostało przypisane do user-3.",
-                        link_url="/projects/1/tasks/103",
-                        is_read=False,
-                        is_delivered=False,
-                    ),
-                    Notification(
-                        user_id="user-3",
-                        type=NotificationType.TASK_UPDATED,
-                        title="Zaktualizowano zadanie",
-                        message="Zadanie BON-101 zmieniło status na DONE.",
-                        link_url="/projects/1/tasks/101",
-                        is_read=False,
-                        is_delivered=False,
-                    ),
-                ]
-            )
-            db.commit()
+        self._ensure_demo_notification(
+            db,
+            user_id="user-1",
+            notification_type=NotificationType.PR_CREATED,
+            title="Nowy pull request",
+            message="Użytkownik user-2 utworzył PR dla zadania BON-102.",
+            link_url="/projects/1/tasks/102",
+        )
+        self._ensure_demo_notification(
+            db,
+            user_id="user-2",
+            notification_type=NotificationType.PR_REVIEWED,
+            title="Review zaakceptowane",
+            message="Pull request dla BON-102 został zaakceptowany.",
+            link_url="/projects/1/tasks/102",
+        )
+        self._ensure_demo_notification(
+            db,
+            user_id="user-2",
+            notification_type=NotificationType.CHAT_MESSAGE,
+            title="Nowa wiadomość",
+            message="Użytkownik user-1 dodał wiadomość do zadania BON-102.",
+            link_url="/projects/1/tasks/102",
+            is_read=True,
+        )
+        self._ensure_demo_notification(
+            db,
+            user_id="user-3",
+            notification_type=NotificationType.TASK_ASSIGNED,
+            title="Przypisano zadanie",
+            message="Zadanie BON-103 zostało przypisane do user-3.",
+            link_url="/projects/1/tasks/103",
+        )
+        self._ensure_demo_notification(
+            db,
+            user_id="user-3",
+            notification_type=NotificationType.TASK_UPDATED,
+            title="Zaktualizowano zadanie",
+            message="Zadanie BON-101 zmieniło status na DONE.",
+            link_url="/projects/1/tasks/101",
+        )
 
-        message_count = db.scalar(select(func.count()).select_from(ChatMessage)) or 0
-        if message_count == 0:
-            db.add_all(
-                [
-                    ChatMessage(
-                        task_id=101,
-                        author_id="user-3",
-                        text="Boilerplate jest gotowy, proszę o review.",
-                    ),
-                    ChatMessage(
-                        task_id=101,
-                        author_id="user-1",
-                        text="Sprawdziłem, wygląda dobrze. Zamykamy temat.",
-                    ),
-                    ChatMessage(
-                        task_id=102,
-                        author_id="user-2",
-                        text="Frontend auth jest podpięty, potrzebuję potwierdzenia kontraktu API.",
-                    ),
-                ]
+        self._ensure_demo_message(
+            db,
+            task_id=101,
+            author_id="user-3",
+            text="Boilerplate jest gotowy, proszę o review.",
+        )
+        self._ensure_demo_message(
+            db,
+            task_id=101,
+            author_id="user-1",
+            text="Sprawdziłem, wygląda dobrze. Zamykamy temat.",
+        )
+        self._ensure_demo_message(
+            db,
+            task_id=102,
+            author_id="user-2",
+            text="Frontend auth jest podpięty, potrzebuję potwierdzenia kontraktu API.",
+        )
+
+    def _ensure_demo_notification(
+        self,
+        db: Session,
+        user_id: str,
+        notification_type: NotificationType,
+        title: str,
+        message: str,
+        link_url: str,
+        is_read: bool = False,
+    ) -> None:
+        existing = db.scalar(
+            select(Notification).where(
+                and_(
+                    Notification.user_id == user_id,
+                    Notification.type == notification_type,
+                    Notification.title == title,
+                    Notification.link_url == link_url,
+                )
             )
-            db.commit()
+        )
+        if existing:
+            return
+
+        db.add(
+            Notification(
+                user_id=user_id,
+                type=notification_type,
+                title=title,
+                message=message,
+                link_url=link_url,
+                is_read=is_read,
+                is_delivered=False,
+            )
+        )
+        db.commit()
+
+    def _ensure_demo_message(
+        self,
+        db: Session,
+        task_id: int,
+        author_id: str,
+        text: str,
+    ) -> None:
+        existing = db.scalar(
+            select(ChatMessage).where(
+                and_(
+                    ChatMessage.task_id == task_id,
+                    ChatMessage.author_id == author_id,
+                    ChatMessage.text == text,
+                )
+            )
+        )
+        if existing:
+            return
+
+        db.add(ChatMessage(task_id=task_id, author_id=author_id, text=text))
+        db.commit()
 
     async def _broadcast_chat_message(self, message: ChatMessage) -> None:
         payload = {
