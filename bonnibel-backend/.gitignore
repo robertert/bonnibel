@@ -1,2 +1,7 @@
 .env
 bonnibel_venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.db
+.pytest_cache/
