@@ -30,6 +30,16 @@ class ChatMessageRead(CamelModel):
 
 
 class ChatMessageCreate(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "text": "Hej, wrzuciłem zmiany do review. Możesz zerknąć?",
+                }
+            ]
+        }
+    )
+
     text: str = Field(min_length=1, max_length=4000)
 
 
@@ -40,7 +50,66 @@ class TaskSubscriptionRead(CamelModel):
 
 
 class NotificationEventCreate(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
+            "examples": [
+                {
+                    "type": "TASK_UPDATED",
+                    "taskId": 102,
+                    "projectId": 1,
+                    "actorId": "user-1",
+                    "title": "Zmieniono status zadania",
+                    "message": "Zadanie BON-102 przeszło do review.",
+                    "linkUrl": "/projects/1/tasks/102",
+                },
+                {
+                    "type": "PR_CREATED",
+                    "taskId": 102,
+                    "projectId": 1,
+                    "actorId": "user-2",
+                    "ownerId": "user-1",
+                    "assigneeId": "user-2",
+                    "reviewerId": "user-1",
+                    "title": "Utworzono pull request",
+                    "message": "Użytkownik user-2 utworzył PR dla zadania BON-102.",
+                    "linkUrl": "/projects/1/tasks/102",
+                },
+                {
+                    "type": "PR_REVIEWED",
+                    "taskId": 102,
+                    "projectId": 1,
+                    "actorId": "user-1",
+                    "ownerId": "user-1",
+                    "assigneeId": "user-2",
+                    "title": "Review zaakceptowane",
+                    "message": "Pull request dla BON-102 został zaakceptowany.",
+                    "linkUrl": "/projects/1/tasks/102",
+                },
+                {
+                    "type": "TASK_ASSIGNED",
+                    "taskId": 103,
+                    "projectId": 1,
+                    "actorId": "user-1",
+                    "assigneeId": "user-3",
+                    "reviewerId": "user-1",
+                    "title": "Przypisano zadanie",
+                    "message": "Zadanie BON-103 zostało przypisane do user-3.",
+                    "linkUrl": "/projects/1/tasks/103",
+                },
+                {
+                    "type": "CHAT_MESSAGE",
+                    "taskId": 102,
+                    "projectId": 1,
+                    "actorId": "user-2",
+                    "recipientIds": ["user-1", "user-3"],
+                    "title": "Nowa wiadomość",
+                    "message": "Użytkownik user-2 dodał wiadomość do zadania BON-102.",
+                    "linkUrl": "/projects/1/tasks/102",
+                },
+            ]
+        },
+    )
 
     type: NotificationType
     task_id: int | None = None
@@ -73,7 +142,29 @@ class NotificationEventCreate(BaseModel):
 
 
 class TaskRecipientSnapshotUpsert(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
+            "examples": [
+                {
+                    "taskId": 103,
+                    "projectId": 1,
+                    "ownerId": "user-1",
+                    "assigneeId": "user-3",
+                    "reviewerId": "user-1",
+                    "title": "Stworzenie widoku Tablicy Zadań",
+                },
+                {
+                    "taskId": 102,
+                    "projectId": 1,
+                    "ownerId": "user-1",
+                    "assigneeId": "user-2",
+                    "reviewerId": "user-1",
+                    "title": "Integracja Auth Module z frontendem",
+                },
+            ]
+        },
+    )
 
     task_id: int
     project_id: int | None = None

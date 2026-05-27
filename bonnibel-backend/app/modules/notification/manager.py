@@ -268,9 +268,6 @@ class NotificationService:
         return notifications
 
     def seed_demo_data(self, db: Session) -> None:
-        if db.get(TaskRecipientSnapshot, 101):
-            return
-
         self.upsert_task_snapshot(
             db,
             task_id=101,
@@ -289,6 +286,98 @@ class NotificationService:
             reviewer_id="user-1",
             title="Integracja Auth Module z frontendem",
         )
+        self.upsert_task_snapshot(
+            db,
+            task_id=103,
+            project_id=1,
+            owner_id="user-1",
+            assignee_id="user-3",
+            reviewer_id="user-1",
+            title="Stworzenie widoku Tablicy Zadań",
+        )
+
+        for task_id, user_id in [
+            (101, "user-2"),
+            (102, "user-3"),
+            (103, "user-1"),
+        ]:
+            self.subscribe(db, task_id, user_id)
+
+        notification_count = db.scalar(select(func.count()).select_from(Notification)) or 0
+        if notification_count == 0:
+            db.add_all(
+                [
+                    Notification(
+                        user_id="user-1",
+                        type=NotificationType.PR_CREATED,
+                        title="Nowy pull request",
+                        message="Użytkownik user-2 utworzył PR dla zadania BON-102.",
+                        link_url="/projects/1/tasks/102",
+                        is_read=False,
+                        is_delivered=False,
+                    ),
+                    Notification(
+                        user_id="user-2",
+                        type=NotificationType.PR_REVIEWED,
+                        title="Review zaakceptowane",
+                        message="Pull request dla BON-102 został zaakceptowany.",
+                        link_url="/projects/1/tasks/102",
+                        is_read=False,
+                        is_delivered=False,
+                    ),
+                    Notification(
+                        user_id="user-2",
+                        type=NotificationType.CHAT_MESSAGE,
+                        title="Nowa wiadomość",
+                        message="Użytkownik user-1 dodał wiadomość do zadania BON-102.",
+                        link_url="/projects/1/tasks/102",
+                        is_read=True,
+                        is_delivered=False,
+                    ),
+                    Notification(
+                        user_id="user-3",
+                        type=NotificationType.TASK_ASSIGNED,
+                        title="Przypisano zadanie",
+                        message="Zadanie BON-103 zostało przypisane do user-3.",
+                        link_url="/projects/1/tasks/103",
+                        is_read=False,
+                        is_delivered=False,
+                    ),
+                    Notification(
+                        user_id="user-3",
+                        type=NotificationType.TASK_UPDATED,
+                        title="Zaktualizowano zadanie",
+                        message="Zadanie BON-101 zmieniło status na DONE.",
+                        link_url="/projects/1/tasks/101",
+                        is_read=False,
+                        is_delivered=False,
+                    ),
+                ]
+            )
+            db.commit()
+
+        message_count = db.scalar(select(func.count()).select_from(ChatMessage)) or 0
+        if message_count == 0:
+            db.add_all(
+                [
+                    ChatMessage(
+                        task_id=101,
+                        author_id="user-3",
+                        text="Boilerplate jest gotowy, proszę o review.",
+                    ),
+                    ChatMessage(
+                        task_id=101,
+                        author_id="user-1",
+                        text="Sprawdziłem, wygląda dobrze. Zamykamy temat.",
+                    ),
+                    ChatMessage(
+                        task_id=102,
+                        author_id="user-2",
+                        text="Frontend auth jest podpięty, potrzebuję potwierdzenia kontraktu API.",
+                    ),
+                ]
+            )
+            db.commit()
 
     async def _broadcast_chat_message(self, message: ChatMessage) -> None:
         payload = {

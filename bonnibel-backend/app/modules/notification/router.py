@@ -140,3 +140,12 @@ async def upsert_task_snapshot(
         title=payload.title,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/notifications/demo/seed")
+async def seed_demo_data(
+    current_user_id: CurrentUserId,
+    db: Annotated[Session, Depends(get_db)],
+) -> dict[str, str]:
+    notification_service.seed_demo_data(db)
+    return {"status": "demo data ready"}

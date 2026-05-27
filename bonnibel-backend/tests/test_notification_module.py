@@ -12,6 +12,10 @@ async def test_subscribe_and_resolve_task_updated_event(client):
     assert response.status_code == 201
     assert response.json()["taskId"] == 102
 
+    response = await client.get("/notifications/unread-count", headers=auth("user-2"))
+    assert response.status_code == 200
+    initial_unread_count = response.json()["unreadCount"]
+
     response = await client.post(
         "/notifications/events",
         headers=auth("user-1"),
@@ -30,7 +34,7 @@ async def test_subscribe_and_resolve_task_updated_event(client):
 
     response = await client.get("/notifications/unread-count", headers=auth("user-2"))
     assert response.status_code == 200
-    assert response.json() == {"unreadCount": 1}
+    assert response.json() == {"unreadCount": initial_unread_count + 1}
 
 
 async def test_chat_message_auto_subscribes_author_and_notifies_subscribers(client):
@@ -53,6 +57,28 @@ async def test_chat_message_auto_subscribes_author_and_notifies_subscribers(clie
     assert response.status_code == 200
     notifications = response.json()
     assert any(item["type"] == "CHAT_MESSAGE" for item in notifications)
+
+
+async def test_seeded_demo_data_is_available_from_get_endpoints(client):
+    response = await client.post("/notifications/demo/seed", headers=auth("user-1"))
+    assert response.status_code == 200
+    assert response.json() == {"status": "demo data ready"}
+
+    response = await client.get("/notifications", headers=auth("user-3"))
+    assert response.status_code == 200
+    notifications = response.json()
+    assert len(notifications) >= 2
+    assert {"TASK_ASSIGNED", "TASK_UPDATED"} <= {item["type"] for item in notifications}
+
+    response = await client.get("/tasks/101/messages", headers=auth("user-1"))
+    assert response.status_code == 200
+    messages = response.json()
+    assert len(messages) >= 2
+    assert messages[0]["text"] == "Boilerplate jest gotowy, proszę o review."
+
+    response = await client.get("/tasks/subscriptions", headers=auth("user-2"))
+    assert response.status_code == 200
+    assert any(item["taskId"] == 101 for item in response.json())
 
 
 async def test_mark_notification_read(client):

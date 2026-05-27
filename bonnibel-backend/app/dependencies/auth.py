@@ -10,7 +10,14 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 async def get_current_user_id(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
-    x_user_id: Annotated[str | None, Header(alias="X-User-Id")] = None,
+    x_user_id: Annotated[
+        str | None,
+        Header(
+            alias="X-User-Id",
+            description="Demo auth header. Use one of: user-1, user-2, user-3.",
+            examples=["user-1"],
+        ),
+    ] = None,
 ) -> str:
     if credentials:
         user_id = decode_access_token(credentials.credentials)
