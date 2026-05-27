@@ -1,2 +1,5 @@
 .env
 bonnibel_venv/
+*.pyc
+.venv
+*.db
