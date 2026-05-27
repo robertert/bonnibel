@@ -42,7 +42,7 @@ Zastosowano architekturę warstwową (layered) z podziałem na moduły biznesowe
 
 Struktura opiera się na izolacji modułów:
 
-- `app/core/` — konfiguracja globalna (zmienne środowiskowe, połączenie DB).
+- `app/core/` — konfiguracja globalna (zmienne środowiskowe, połączenie DB, schemat bazy danych).
 - `app/dependencies/` — współdzielone funkcje dla *Dependency Injection*.
 - `app/modules/` — poszczególne domeny systemu (auth, logic, integration, notification).
 - `alembic/` — wersjonowanie schematu bazy danych.
@@ -59,6 +59,7 @@ bonnibel-backend/
 │   ├── core/                   # Globalna konfiguracja i fundamenty aplikacji
 │   │   ├── config.py           # Wczytywanie i walidacja zmiennych środowiskowych (Pydantic BaseSettings)
 │   │   ├── database.py         # Inicjalizacja silnika SQLAlchemy i sesji bazy danych
+│   │   ├── models.py           # Tabele SQLAlchemy
 │   │   └── security.py         # Konfiguracja algorytmów hashowania haseł i mechanizmów JWT
 │   │
 │   ├── dependencies/           # Współdzielone funkcje wstrzykiwania zależności (Dependency Injection)
@@ -70,8 +71,7 @@ bonnibel-backend/
 │   │   ├── auth/               # Zarządzanie tożsamością i dostępem
 │   │   │   ├── router.py       # REST Controllers (np. POST /login, POST /register)
 │   │   │   ├── service.py      # AuthService (weryfikacja logowania, generowanie tokenów)
-│   │   │   ├── schemas.py      # DTO (Pydantic): definicje payloadów wejściowych i wyjściowych
-│   │   │   └── models.py       # Tabele SQLAlchemy: User, Auth, WebhookSecret
+│   │   │   └── schemas.py      # DTO (Pydantic): definicje payloadów wejściowych i wyjściowych
 │   │   │
 │   │   ├── hook_auth/          # Walidacja zdarzeń zewnętrznych (Webhooki)
 │   │   │   ├── router.py       # Hook Handlers: endpointy przyjmujące powiadomienia
@@ -82,21 +82,18 @@ bonnibel-backend/
 │   │   │   ├── router.py       # Endpointy do zarządzania integracjami projektów
 │   │   │   ├── service.py      # Logika biznesowa integracji
 │   │   │   ├── clients.py      # Klienci HTTP (GitIntegrationClient, JiraIntegrationClient)
-│   │   │   ├── schemas.py      # DTO dla modułu integracji
-│   │   │   └── models.py       # Tabele SQLAlchemy: ProjectIntegration
+│   │   │   └── schemas.py      # DTO dla modułu integracji
 │   │   │
 │   │   ├── logic/              # Główna logika systemu (Zadania, Projekty, Pull Requesty)
 │   │   │   ├── router.py       # REST Controllers dla projektów i zadań
 │   │   │   ├── service.py      # ProjectService, TaskService, MembershipService, DocsService
 │   │   │   ├── repository.py   # Warstwa abstrakcji dla złożonych zapytań SQL do bazy
-│   │   │   ├── schemas.py      # DTO zadań, projektów i historii
-│   │   │   └── models.py       # Tabele SQLAlchemy: Project, ProjectMember, Task, TaskHistory, PullRequest, Docs
+│   │   │   └── schemas.py      # DTO zadań, projektów i historii
 │   │   │
 │   │   └── notification/       # Obsługa czasu rzeczywistego i komunikacji
 │   │       ├── router.py       # Endpointy HTTP (np. pobieranie historii powiadomień)
 │   │       ├── ws.py           # WSModule: punkt wejścia dla połączeń WebSocket
-│   │       ├── manager.py      # NotificationService, ChatService, RecipientResolver (zarządzanie sesjami)
-│   │       └── models.py       # Tabele SQLAlchemy: ChatMessage, Notification, TaskSubscription
+│   │       └── manager.py      # NotificationService, ChatService, RecipientResolver (zarządzanie sesjami)
 │   │
 │   └── main.py                 # Główny plik aplikacji, inicjalizacja FastAPI i rejestracja wszystkich routerów
 │
