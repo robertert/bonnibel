@@ -4,5 +4,6 @@ sqlalchemy
 psycopg2-binary
 alembic
 pydantic-settings
+pydantic[email]
 pyjwt
 passlib[bcrypt]
