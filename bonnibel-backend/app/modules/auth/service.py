@@ -59,10 +59,40 @@ def login_user(db: Session, login_data: UserLogin):
         expires_at=datetime.utcnow() + timedelta(days=7)
     )
     db.add(db_token)
+    db.refresh(user)
     db.commit()
     
     return {
+        "user_id": user.user_id,
         "access_token": access_token,
         "refresh_token": refresh_token_str,
+        "token_type": "bearer"
+    }
+
+def refresh_access_token(db: Session, refresh_token: str):
+    db_token = db.query(RefreshToken).filter(RefreshToken.token == refresh_token).first()
+
+    if not db_token or db_token.is_revoked or db_token.expires_at < datetime.utcnow():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Invalid or expired refresh token"
+        )
+    
+    new_access_token = create_access_token(data={"sub": db_token.user.user_id})
+    new_refresh_token_str = secrets.token_urlsafe(32)
+
+    new_db_token = RefreshToken(
+        user_id=db_token.user.user_id,
+        token=new_refresh_token_str,
+        expires_at=datetime.utcnow() + timedelta(days=7)
+    )
+    db.add(new_db_token)
+    db.delete(db_token)
+    db.commit()
+
+    return {
+        "user_id": db_token.user.user_id,
+        "access_token": new_access_token,
+        "refresh_token": new_refresh_token_str,
         "token_type": "bearer"
     }
