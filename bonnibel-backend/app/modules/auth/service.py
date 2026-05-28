@@ -59,9 +59,11 @@ def login_user(db: Session, login_data: UserLogin):
         expires_at=datetime.utcnow() + timedelta(days=7)
     )
     db.add(db_token)
+    db.refresh(user)
     db.commit()
     
     return {
+        "user_id": user.user_id,
         "access_token": access_token,
         "refresh_token": refresh_token_str,
         "token_type": "bearer"
