@@ -17,6 +17,6 @@ def login(login_data: schemas.UserLogin, db: Session = Depends(get_db)):
     return service.login_user(db, login_data)
 
 
-# @router.post("/refresh", response_model=schemas.TokenResponse)
-# def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
-#     return service.refresh_access_token(db, refresh_token)
+@router.post("/refresh", response_model=schemas.TokenResponse)
+def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
+    return service.refresh_access_token(db, refresh_token)
