@@ -38,6 +38,32 @@ Zastosowano architekturę warstwową (layered) z podziałem na moduły biznesowe
   `TaskHistory`, `PullRequest`, `ChatMessage`, `Notification`,
   `TaskSubscription`, `ProjectIntegration`, `WebhookSecret`, `Docs`
 
+## Procedura uruchomienia backendu
+
+### 1. Tworzenie i aktywacja środowiska wirtualnego
+```bash
+python -m venv venv
+```
+Windows: .\venv\Scripts\activate
+Linux/Mac: source venv/bin/activate
+
+### 2. Instalacja zależności
+```bash
+pip install -r requirements.txt
+```
+### 3. Uruchomienie bazy danych PostgreSQL
+```bash
+docker compose up -d
+```
+### 4. Generowanie i aplikacja migracji bazy danych
+```bash
+alembic upgrade head
+```
+
+### 5. Uruchomienie serwera
+```bash
+uvicorn app.main:app --reload
+```
 ## Struktura katalogów backendu
 
 Struktura opiera się na izolacji modułów:
