@@ -17,11 +17,13 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
   let res = await fetch(`${API_BASE_URL}${path}`, { ...init, headers })
 
+  // POPRAWIONY WARUNEK: Nie odświeżamy tokenu, jeśli błąd 401 wystąpił na stronie logowania, rejestracji lub samego refreshu
   if (!BYPASS_AUTH && res.status === 401 && !path.startsWith('/auth/')) {
     const refreshToken = localStorage.getItem('refreshToken')
 
     if (refreshToken) {
       try {
+        // ZMIANA: Ścieżka zmieniona z /auth/refresh na /refresh (zgodnie z Pythonem)
         const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -30,14 +32,17 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
         if (refreshRes.ok) {
           const data = await refreshRes.json()
-          localStorage.setItem('accessToken', data.accessToken)
-          if (data.refreshToken) {
-            localStorage.setItem('refreshToken', data.refreshToken)
+          
+          // ZMIANA: Python zwraca klucze z podłogami: access_token i refresh_token!
+          localStorage.setItem('accessToken', data.access_token)
+          if (data.refresh_token) {
+            localStorage.setItem('refreshToken', data.refresh_token)
           }
 
-          headers.set('Authorization', `Bearer ${data.accessToken}`)
+          headers.set('Authorization', `Bearer ${data.access_token}`)
           res = await fetch(`${API_BASE_URL}${path}`, { ...init, headers })
         } else {
+          // Jeśli refresh token też wygasł, czyścimy wszystko i na logowanie
           localStorage.clear()
           window.location.href = '/login'
           throw new Error('Sesja wygasła. Zaloguj się ponownie.')

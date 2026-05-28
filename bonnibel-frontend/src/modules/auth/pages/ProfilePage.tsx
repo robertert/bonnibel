@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { userService } from '@/services/userService'
-import { useAuthStore } from '../store/authStore' // 1. IMPORT TWOJEGO STORE'A
+import { useAuthStore } from '../store/authStore' 
 import type { User, UserStatus } from '@/types/domain'
 
 export default function ProfilePage() {
   const navigate = useNavigate()
   
-  // 2. WYCIĄGAMY FUNKCJĘ WYLOGOWANIA ZE STORE'A
   const logoutInStore = useAuthStore((state) => state.logout)
   
   const [user, setUser] = useState<User | null>(null)
   const [name, setName] = useState('')
   const [surname, setSurname] = useState('')
   const [email, setEmail] = useState('')
-  const [status, setStatus] = useState<UserStatus>('AVAILABLE')
+  // 1. ZMIANA: Stan początkowy zmieniony na zgodny z backendem 'ACTIVE'
+  const [status, setStatus] = useState<UserStatus>('ACTIVE')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
@@ -27,20 +27,20 @@ export default function ProfilePage() {
         setName(currentUser.name || '')
         setSurname(currentUser.surname || '')
         setEmail(currentUser.email || '')
-        setStatus(currentUser.status || 'AVAILABLE')
+        // Jeśli backend z jakiegoś powodu nie przysłał statusu, ustawiamy 'ACTIVE'
+        setStatus(currentUser.status || 'ACTIVE')
       })
       .catch((err) => {
         console.error("Błąd ładowania profilu:", err)
-        // 3. OBSŁUGA NOWEGO UŻYTKOWNIKA:
-        // Jeśli profilu nie ma (np. świeżo po rejestracji), tworzymy pusty obiekt placeholder,
-        // dzięki czemu strona się nie zablokuje i użytkownik uzupełni dane po raz pierwszy.
         const cachedUserId = localStorage.getItem('userId') || 'nowy_użytkownik';
+        
+        // 2. ZMIANA: Dopasowanie obiektu placeholder do nowych typów domenowych
         setUser({
           userId: cachedUserId,
           email: '',
           name: '',
           surname: '',
-          status: 'AVAILABLE',
+          status: 'ACTIVE', // Zmiana z AVAILABLE na ACTIVE
           isOnline: true
         })
       })
@@ -65,14 +65,13 @@ export default function ProfilePage() {
     }
   }
 
-  // 4. POPRAWIONE WYLOGOWANIE KORZYSTAJĄCE Z CENTRALNEGO AUTORYZOWANEGO SYSTEMU
   const handleLogout = () => {
-    logoutInStore() // To czyści cały localStorage oraz przestawia stan aplikacji w Zustand
+    logoutInStore() 
     navigate('/login')
   }
 
   if (loading) {
-    return <div style={{ padding: '24px', textAlign: 'center' }}>Ładowanie danych profilu...</div>
+    return <div style={{ padding: '24px', textAlign: 'center', color: '#1a202c' }}>Ładowanie danych profilu...</div>
   }
 
   if (!user) {
@@ -106,9 +105,9 @@ export default function ProfilePage() {
                 width: '100%',
                 padding: '10px 12px',
                 borderRadius: '6px',
-                border: '1px solid #cbd5e0', // Ładniejsza, wyraźniejsza ramka
-                background: '#ffffff',       // Zmienione na białe tło - sygnalizuje możliwość pisania
-                color: '#1a202c',            // Zmienione na ciemny tekst
+                border: '1px solid #cbd5e0',
+                background: '#ffffff',
+                color: '#1a202c',
                 fontSize: '14px',
                 boxSizing: 'border-box'
               }}
@@ -164,7 +163,7 @@ export default function ProfilePage() {
           {/* Status Dostępności */}
           <div style={{ marginBottom: '24px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#4a5568', marginBottom: '6px' }}>
-              Status dostępności w zespole
+              Status konta użytkownika
             </label>
             <select
               value={status}
@@ -180,9 +179,10 @@ export default function ProfilePage() {
                 cursor: 'pointer'
               }}
             >
-              <option value="AVAILABLE" style={{ color: '#1a202c', backgroundColor: '#ffffff' }}>Dostępny (AVAILABLE)</option>
-              <option value="BUSY" style={{ color: '#1a202c', backgroundColor: '#ffffff' }}>Zajęty (BUSY)</option>
-              <option value="OPEN_TO_TASKS" style={{ color: '#1a202c', backgroundColor: '#ffffff' }}>Wolny do zadań (OPEN_TO_TASKS)</option>
+              {/* 3. ZMIANA: Opcje selecta zmienione na zgodne z bazą danych kolegi */}
+              <option value="ACTIVE" style={{ color: '#1a202c', backgroundColor: '#ffffff' }}>Aktywny (ACTIVE)</option>
+              <option value="INACTIVE" style={{ color: '#1a202c', backgroundColor: '#ffffff' }}>Nieaktywny (INACTIVE)</option>
+              <option value="BANNED" style={{ color: '#1a202c', backgroundColor: '#ffffff' }}>Zablokowany (BANNED)</option>
             </select>
           </div>
 

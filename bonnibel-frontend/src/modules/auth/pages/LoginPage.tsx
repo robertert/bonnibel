@@ -9,18 +9,21 @@ export const LoginPage = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  
   const { register, handleSubmit, formState: { isSubmitting } } = useForm();
 
   const onSubmit = async (data: any) => {
     setError(null);
     try {
-      const res = await authService.login(data.userId, data.password);
-      // Zapisujemy tokeny globalnie w aplikacji
-      loginInStore(res.accessToken, res.refreshToken, res.userId);
-      // Przekierowanie do pulpitu aplikacji
-      navigate('/profile');
+      // Backend oczekuje data.email, a nie data.userId
+      const res = await authService.login(data.email, data.password);
+      
+      
+      loginInStore(res.access_token, res.refresh_token, res.user_id || '');
+      
+      navigate('/profile'); // Od razu na projekty
     } catch (err: any) {
-      setError('Nieprawidłowy identyfikator lub hasło.');
+      setError('Nieprawidłowy adres e-mail lub hasło.');
     }
   };
 
@@ -30,8 +33,13 @@ export const LoginPage = () => {
         <h2 className="mb-6 text-2xl font-bold text-center text-gray-800">Logowanie - Bonnibel</h2>
         
         <div className="mb-4">
-          <label className="block mb-2 text-sm font-medium text-gray-700">Identyfikator użytkownika:</label>
-          <input {...register('userId', { required: true })} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 " style={{ borderColor: '#acc6ec', color: 'black' }} />
+          <label className="block mb-2 text-sm font-medium text-gray-700">Adres E-mail:</label>
+          <input 
+            type="email"
+            {...register('email', { required: true })} 
+            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            style={{ borderColor: '#acc6ec', color: 'black', backgroundColor: 'white' }} 
+          />
         </div>
 
         <div className="mb-4">
@@ -59,12 +67,13 @@ export const LoginPage = () => {
         <button type="submit" disabled={isSubmitting} className="w-full py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-300">
           {isSubmitting ? 'Logowanie...' : 'Zaloguj się'}
         </button>
+        
         <div style={{ marginTop: '15px', textAlign: 'center', fontSize: '14px', color: '#555' }}>
-            Nie masz jeszcze konta?{' '}
-            <Link to="/register" style={{ color: '#007bff', textDecoration: 'underline' }}>
-              Zarejestruj się
-            </Link>
-          </div>
+          Nie masz jeszcze konta?{' '}
+          <Link to="/register" style={{ color: '#007bff', textDecoration: 'underline' }}>
+            Zarejestruj się
+          </Link>
+        </div>
       </form>
     </div>
   );
