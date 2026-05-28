@@ -1,4 +1,4 @@
-"""Wspólne fixtury testowe: izolowana baza SQLite in-memory na naszych core/models."""
+"""Wspolne fixtury testowe: izolowana baza SQLite in-memory na core/models."""
 from __future__ import annotations
 
 import asyncio
@@ -9,11 +9,11 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.core.models import Base, User, UserStatus
+from app.core.models import Base, Project, Task, User, UserStatus
 
 
-# W SQLite autoinkrementacja działa tylko dla "INTEGER PRIMARY KEY" (alias ROWID),
-# a nasze PK to BigInteger -> BIGINT. Na potrzeby testów kompilujemy BigInteger
+# W SQLite autoinkrementacja dziala tylko dla "INTEGER PRIMARY KEY" (alias ROWID),
+# a nasze PK to BigInteger -> BIGINT. Na potrzeby testow kompilujemy BigInteger
 # jako INTEGER (tylko dialekt sqlite; produkcyjny Postgres bez zmian).
 @compiles(BigInteger, "sqlite")
 def _compile_bigint_sqlite(element, compiler, **kw):  # noqa: ANN001
@@ -22,7 +22,7 @@ def _compile_bigint_sqlite(element, compiler, **kw):  # noqa: ANN001
 
 @pytest.fixture
 def db():
-    # StaticPool + jedno połączenie => baza :memory: żyje przez cały test.
+    # StaticPool + jedno polaczenie => baza :memory: zyje przez caly test.
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -40,8 +40,13 @@ def db():
 
 
 @pytest.fixture
+def db_session(db):
+    return db
+
+
+@pytest.fixture
 def run():
-    """Uruchamia korutynę serwisu w teście synchronicznym."""
+    """Uruchamia korutyne serwisu w tescie synchronicznym."""
     def _run(coro):
         return asyncio.run(coro)
     return _run
@@ -62,3 +67,42 @@ def make_user(db):
         db.commit()
         return user
     return _make
+
+
+@pytest.fixture
+def seeded_task(db_session):
+    owner = User(
+        user_id="owner-1",
+        email="owner@example.com",
+        name="Owner",
+        surname="User",
+        status=UserStatus.ACTIVE,
+        is_online=False,
+    )
+    reviewer = User(
+        user_id="reviewer-1",
+        email="reviewer@example.com",
+        name="Review",
+        surname="User",
+        status=UserStatus.ACTIVE,
+        is_online=False,
+    )
+    project = Project(
+        project_id=1,
+        owner_id=owner.user_id,
+        name="Demo",
+        description="Demo project",
+    )
+    task = Task(
+        task_id=1,
+        project_id=project.project_id,
+        title="Implement docs",
+        description="Task description",
+        assignee_id=owner.user_id,
+        reviewer_id=reviewer.user_id,
+        git_branch_name="feature/docs",
+        jira_issue_key="BON-1",
+    )
+    db_session.add_all([owner, reviewer, project, task])
+    db_session.commit()
+    return task

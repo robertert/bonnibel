@@ -10,7 +10,7 @@ from app.modules.notification.router import router as notification_router
 from app.modules.notification.ws import router as notification_ws_router
 from app.modules.task_history.router import router as task_history_router
 from app.modules.docs.router import router as docs_router
-from app.modules.pull_requests.router import router as pull_requests_router
+from app.modules.pr.router import router as pr_router
 from app.modules.hook_auth.router import router as hook_auth_router
 
 # FastAPI app init
@@ -41,7 +41,7 @@ app.include_router(notification_ws_router, prefix="/api", tags=["Notifications"]
 
 app.include_router(task_history_router, prefix="/api", tags=["Task History"])
 app.include_router(docs_router, prefix="/api", tags=["Docs"])
-app.include_router(pull_requests_router, prefix="/api", tags=["Pull Requests"])
+app.include_router(pr_router, prefix="/api", tags=["Pull Requests"])
 app.include_router(hook_auth_router, prefix="/api", tags=["Webhooks"])
 
 # (Health Check)

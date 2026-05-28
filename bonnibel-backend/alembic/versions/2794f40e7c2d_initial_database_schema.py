@@ -131,7 +131,7 @@ def upgrade() -> None:
     sa.Column('title', sa.String(), nullable=False),
     sa.Column('url', sa.String(), nullable=False),
     sa.Column('reviewer_id', sa.String(), nullable=True),
-    sa.Column('status', sa.Enum('OPEN', 'MERGED', 'CLOSED', name='pullrequeststatus'), nullable=False),
+    sa.Column('status', sa.Enum('OPEN', 'APPROVED', 'REJECTED', 'MERGED', 'CLOSED', name='pullrequeststatus'), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('merged_at', sa.DateTime(), nullable=True),
