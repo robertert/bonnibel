@@ -14,7 +14,6 @@ const EMPTY_BY_STATUS: AnalyticsByStatus = {
   IN_PROGRESS: 0,
   IN_REVIEW: 0,
   DONE: 0,
-  CLOSED: 0,
 }
 
 async function fetchAllProjectTasks(projectId: number): Promise<Task[]> {
@@ -51,6 +50,8 @@ export const analyticsService = {
     const tasks = await fetchAllProjectTasks(projectId)
     const out: AnalyticsByStatus = { ...EMPTY_BY_STATUS }
     for (const t of tasks) {
+      // Backend (core/models.py:TaskStatus) nie zna CLOSED — pomijamy.
+      if (t.status === 'CLOSED') continue
       out[t.status] = (out[t.status] ?? 0) + 1
     }
     return out
@@ -77,8 +78,10 @@ export const analyticsService = {
         `/api/projects/${projectId}/analytics/closed-history`
       )
     }
+    // Backend TaskEventType nie ma już dedykowanego TASK_CLOSED/PR_MERGED —
+    // używamy STATUS_CHANGED (status zmieniony na DONE) jako proxy.
     const history = await fetchAllProjectHistory(projectId)
-    return history.filter((h) => h.type === 'TASK_CLOSED' || h.type === 'PR_MERGED')
+    return history.filter((h) => h.type === 'STATUS_CHANGED')
   },
 
   getCommits: async (projectId: number): Promise<AnalyticsCommits> => {
@@ -87,12 +90,9 @@ export const analyticsService = {
         `/api/projects/${projectId}/analytics/commits`
       )
     }
-    const history = await fetchAllProjectHistory(projectId)
-    const commits = history.filter((h) => h.type === 'COMMIT')
-    const byActor: Record<string, number> = {}
-    for (const c of commits) {
-      byActor[c.actorId] = (byActor[c.actorId] ?? 0) + 1
-    }
-    return { commitCount: commits.length, byActor }
+    // TODO: backend TaskEventType nie modeluje COMMIT — bez dedykowanego
+    // typu zdarzenia zwracamy zera. Do uzupełnienia gdy backend doda commit
+    // tracking.
+    return { commitCount: 0, byActor: {} }
   },
 }

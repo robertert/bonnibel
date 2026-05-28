@@ -10,15 +10,35 @@ function jsonServerPath(projectId: number, taskId: number) {
   return `/chatMessages?taskId=${taskId}&_sort=createdAt&_order=asc`
 }
 
-type RawMessage = Partial<ChatMessage> & { id?: number }
+function messageUrl(projectId: number, taskId: number, messageId: number) {
+  if (isUsingFastApiBackend()) {
+    return `/api/projects/${projectId}/tasks/${taskId}/messages/${messageId}`
+  }
+  return `/chatMessages/${messageId}`
+}
+
+// Wire format z backendu (snake_case w core/models.py → JSON FastAPI).
+// json-server używa formy bliskiej naszej domenowej; obsługujemy obie.
+type RawMessage = {
+  id?: number
+  messageId?: number
+  message_id?: number
+  taskId?: number
+  task_id?: number
+  authorId?: string
+  author_id?: string
+  text?: string
+  createdAt?: string
+  created_at?: string
+}
 
 function normalize(msg: RawMessage): ChatMessage {
   return {
-    messageId: (msg.messageId ?? msg.id) as number,
-    taskId: msg.taskId as number,
-    authorId: msg.authorId as string,
+    messageId: (msg.messageId ?? msg.message_id ?? msg.id) as number,
+    taskId: (msg.taskId ?? msg.task_id) as number,
+    authorId: (msg.authorId ?? msg.author_id) as string,
     text: msg.text as string,
-    createdAt: msg.createdAt as string,
+    createdAt: (msg.createdAt ?? msg.created_at) as string,
   }
 }
 
@@ -56,6 +76,35 @@ export const chatService = {
       body: JSON.stringify(payload),
     })
     return normalize(created)
+  },
+
+  // TODO: backend (app/core/models.py → ChatMessage) nie ma jeszcze pola
+  // updated_at ani endpointu PATCH. Działa na json-server; po stronie FastAPI
+  // wymaga dodania zarówno migracji jak i routera.
+  updateMessage: async (
+    projectId: number,
+    taskId: number,
+    messageId: number,
+    text: string
+  ): Promise<ChatMessage> => {
+    const updated = await apiFetch<RawMessage>(
+      messageUrl(projectId, taskId, messageId),
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ text }),
+      }
+    )
+    return normalize(updated)
+  },
+
+  deleteMessage: async (
+    projectId: number,
+    taskId: number,
+    messageId: number
+  ): Promise<void> => {
+    await apiFetch<unknown>(messageUrl(projectId, taskId, messageId), {
+      method: 'DELETE',
+    })
   },
 }
 

@@ -38,6 +38,43 @@ export default function TaskChat({ projectId, taskId }: Props) {
     })
   }
 
+  const replaceMessage = (msg: ChatMessage) => {
+    queryClient.setQueryData<ChatMessage[]>(queryKey, (old = []) =>
+      old.map((m) => (m.messageId === msg.messageId ? msg : m))
+    )
+  }
+
+  const removeMessage = (messageId: number) => {
+    queryClient.setQueryData<ChatMessage[]>(queryKey, (old = []) =>
+      old.filter((m) => m.messageId !== messageId)
+    )
+  }
+
+  const handleEdit = async (messageId: number, newText: string) => {
+    try {
+      const updated = await chatService.updateMessage(
+        projectId,
+        taskId,
+        messageId,
+        newText,
+      )
+      replaceMessage(updated)
+    } catch (err) {
+      console.error('Nie udało się zaktualizować wiadomości', err)
+      window.alert('Nie udało się zaktualizować wiadomości.')
+    }
+  }
+
+  const handleDelete = async (messageId: number) => {
+    try {
+      await chatService.deleteMessage(projectId, taskId, messageId)
+      removeMessage(messageId)
+    } catch (err) {
+      console.error('Nie udało się usunąć wiadomości', err)
+      window.alert('Nie udało się usunąć wiadomości.')
+    }
+  }
+
   useEffect(() => {
     const ws = openTaskChatSocket(
       taskId,
@@ -117,6 +154,8 @@ export default function TaskChat({ projectId, taskId }: Props) {
             key={m.messageId}
             message={m}
             mine={m.authorId === currentUserId}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
           />
         ))}
       </div>

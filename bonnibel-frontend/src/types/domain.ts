@@ -42,7 +42,7 @@ export interface Task {
   reviewerId: string | null;
   gitBranchName: string | null;
   jiraIssueKey: string | null;
-  createdAt: string; 
+  createdAt: string;
   updatedAt: string;
   closedAt: string | null;
 }
@@ -83,6 +83,8 @@ export interface AuthResponse {
   userId: string;
 }
 
+// Dopasowanie do bonnibel-backend/app/core/models.py:ChatMessage
+//   message_id, task_id, author_id, text, created_at  (BRAK updated_at).
 export interface ChatMessage {
   messageId: number;
   taskId: number;
@@ -96,12 +98,15 @@ export interface AnalyticsTaskCount {
   taskCount: number;
 }
 
-export type AnalyticsByStatus = Partial<Record<TaskStatus, number>> & {
+// Dopasowanie do bonnibel-backend/app/core/models.py:TaskStatus
+//   TODO, IN_PROGRESS, IN_REVIEW, DONE  (BRAK CLOSED).
+// TaskStatus na froncie zawiera jeszcze CLOSED dla pozostałych modułów,
+// ale analytics liczy tylko statusy z backendu.
+export type AnalyticsByStatus = {
   TODO: number;
   IN_PROGRESS: number;
   IN_REVIEW: number;
   DONE: number;
-  CLOSED: number;
 }
 
 export type AnalyticsByAssignee = Record<string, number>
