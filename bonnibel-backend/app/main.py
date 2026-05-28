@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.modules.auth.router import router as auth_router
+from app.modules.docs.router import router as docs_router
+from app.modules.pr.router import router as pr_router
 
 # FastAPI app init
 app = FastAPI(
@@ -20,9 +22,10 @@ app.add_middleware(
 )
 
 app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
+app.include_router(docs_router, prefix="/api", tags=["Docs"])
+app.include_router(pr_router, prefix="/api", tags=["Pull Requests"])
 
 # (Health Check)
 @app.get("/api/health", tags=["System"])
-def health_check():
+async def health_check():
     return {"status": "ok", "message": "Bonnibel API działa poprawnie"}
-
