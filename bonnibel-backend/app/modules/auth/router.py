@@ -18,5 +18,10 @@ def login(login_data: schemas.UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/refresh", response_model=schemas.TokenResponse)
-def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
-    return service.refresh_access_token(db, refresh_token)
+def refresh_token(request: schemas.RefreshTokenRequest, db: Session = Depends(get_db)):
+    return service.refresh_access_token(db, request.refresh_token)
+
+@router.post("/logout")
+def logout(request: schemas.LogoutRequest, db: Session = Depends(get_db)):
+    service.logout_user(db, request.refresh_token)
+    return {"message": "Logged out successfully"}

@@ -96,3 +96,15 @@ def refresh_access_token(db: Session, refresh_token: str):
         "refresh_token": new_refresh_token_str,
         "token_type": "bearer"
     }
+
+def logout_user(db: Session, refresh_token: str):
+    db_token = db.query(RefreshToken).filter(RefreshToken.token == refresh_token).first()
+
+    if not db_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid refresh token"
+        )
+
+    db.delete(db_token)
+    db.commit()
