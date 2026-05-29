@@ -27,10 +27,10 @@ export const authService = {
   },
 
   // POST /auth/refresh - Odświeżanie tokenu (Silent Refresh z api.ts)
-  refresh: (refreshToken: string): Promise<AuthTokens> => {
-    return apiFetch<AuthTokens>('/auth/refresh', {
+  refresh: (refreshToken: string): Promise<AuthResponse> => {
+    return apiFetch<AuthResponse>('/auth/refresh', {
       method: 'POST',
-      body: JSON.stringify({ refreshToken }),
+      body: JSON.stringify({"refresh_token": refreshToken }),
     });
   }
 };

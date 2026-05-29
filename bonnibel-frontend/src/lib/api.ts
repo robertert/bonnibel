@@ -1,4 +1,5 @@
 // RĘCZNY BASE URL: Wpisany na sztywno port 8000 dla Twojego backendu w Pythonie
+import type { AuthResponse } from '@/types/domain';
 export const API_BASE_URL = 'http://localhost:8000/api'
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -22,11 +23,11 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
         const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
+          body: JSON.stringify({ "refresh_token": refreshToken }),
         })
 
         if (refreshRes.ok) {
-          const data = await refreshRes.json()
+          const data : AuthResponse = await refreshRes.json()
           
           localStorage.setItem('accessToken', data.access_token)
           if (data.refresh_token) {
