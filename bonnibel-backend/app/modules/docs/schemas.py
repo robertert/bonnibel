@@ -8,6 +8,11 @@ class DocsCreate(BaseModel):
     url: str = Field(min_length=1)
 
 
+class DocsUpdate(BaseModel):
+    title: str = Field(min_length=1)
+    url: str = Field(min_length=1)
+
+
 class DocsResponse(BaseModel):
     docsId: int
     taskId: int

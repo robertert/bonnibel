@@ -145,6 +145,28 @@ class PullRequestService:
         self.role_service.require_permission(actor_id, None, "VIEW_PROJECT_TASKS")
         return self.pull_request_repository.find_by_user_id(user_id)
 
+    def get_project_pull_requests(
+        self,
+        actor_id: str,
+        project_id: int,
+        reviewer_id: Optional[str] = None,
+        pr_status: Optional[PullRequestStatus] = None,
+    ) -> list[PullRequest]:
+        self.role_service.require_permission(actor_id, project_id, "VIEW_PROJECT_TASKS")
+        return self.pull_request_repository.find_by_project(project_id, reviewer_id, pr_status)
+
+    def get_reviews_scope_pull_requests(
+        self,
+        actor_id: str,
+        user_id: str,
+        pr_status: Optional[PullRequestStatus] = None,
+    ) -> list[PullRequest]:
+        self.role_service.require_permission(actor_id, None, "VIEW_PROJECT_TASKS")
+        return self.pull_request_repository.find_for_reviews_scope(user_id, pr_status)
+
+    def get_task_context(self, task_id: int):
+        return self.task_repository.find_by_id(task_id)
+
     def accept_review(
         self,
         reviewer_id: str,

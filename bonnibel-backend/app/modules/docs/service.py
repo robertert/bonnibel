@@ -131,6 +131,29 @@ class DocsService:
             )
         return self.docs_repository.find_by_project_id(project_id)
 
+    def update_task_docs(
+        self,
+        actor_id: str,
+        project_id: int,
+        task_id: int,
+        title: str,
+        url: str,
+    ) -> Docs:
+        self.role_service.require_permission(actor_id, project_id, "ADD_TASK_DOCS")
+        task = self.task_repository.find_by_project_and_id(project_id, task_id)
+        if task is None:
+            raise api_error(status.HTTP_404_NOT_FOUND, "TASK_NOT_FOUND", "Task was not found")
+        docs = self.docs_repository.find_by_task_id(task_id)
+        if docs is None:
+            raise api_error(status.HTTP_404_NOT_FOUND, "DOCS_NOT_FOUND", "Docs were not found")
+
+        docs.title = title
+        docs.url = url
+        saved = self.docs_repository.save(docs)
+        self.task_history_service.add_history(task_id, actor_id, "DOCS_UPDATED", title, saved.url)
+        self.notification_service.notify("DOCS_UPDATED", task_id)
+        return saved
+
     def require_task_has_docs(self, task_id: int) -> None:
         if not self.docs_repository.exists_by_task_id(task_id):
             raise api_error(

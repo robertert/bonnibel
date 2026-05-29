@@ -6,10 +6,12 @@ from pydantic import BaseModel, Field
 
 class PullRequestResponse(BaseModel):
     pullRequestId: int
+    projectId: Optional[int] = None
     taskId: int
     externalId: str
     title: str
     url: str
+    assigneeId: Optional[str] = None
     reviewerId: Optional[str] = None
     status: str
     createdAt: datetime

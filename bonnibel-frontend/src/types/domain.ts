@@ -1,10 +1,10 @@
-// Placeholdery typów domenowych z dokumentacji.
-// TODO: dopracować po zdefiniowaniu API backendu.
+// Placeholdery typow domenowych z dokumentacji.
+// TODO: dopracowac po zdefiniowaniu API backendu.
 
 export type ProjectRole = 'OWNER' | 'DEVELOPER' | 'REVIEWER'
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BANNED'
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'CLOSED'
-export type PullRequestStatus = 'OPEN' | 'APPROVED' | 'DECLINED' | 'MERGED'
+export type PullRequestStatus = 'OPEN' | 'APPROVED' | 'REJECTED' | 'MERGED' | 'CLOSED'
 export type IntegrationProvider = 'GITHUB' | 'JIRA' | 'CONFLUENCE'
 export type NotificationType =
   | 'TASK_ASSIGNED'
@@ -22,7 +22,6 @@ export type TaskEventType =
   | 'TASK_CLOSED'
   | 'CHAT_MESSAGE_CREATED'
 
-
 export interface Notification {
   notificationId: number;
   userId: string;
@@ -34,7 +33,6 @@ export interface Notification {
   isDelivered: boolean;
   createdAt: string;
 }
-
 
 export interface User {
   userId: string;
@@ -68,6 +66,27 @@ export interface TaskDoc {
   externalId: string | null;
 }
 
+export interface PullRequest {
+  pullRequestId: number;
+  projectId?: number | null;
+  taskId: number;
+  externalId: string;
+  title: string;
+  url: string;
+  assigneeId?: string | null;
+  reviewerId: string | null;
+  status: PullRequestStatus;
+  createdAt: string;
+  updatedAt: string | null;
+  mergedAt: string | null;
+}
+
+export interface ProjectMember {
+  projectId: number;
+  userId: string;
+  role: ProjectRole;
+}
+
 export interface TaskSubscription {
   taskId: number;
   userId: string;
@@ -83,8 +102,6 @@ export interface TaskHistory {
   url: string;
 }
 
-
-
 export interface AuthTokens {
   access_token: string;
   refresh_token: string;
@@ -96,8 +113,6 @@ export interface AuthResponse {
   user_id?: string;
 }
 
-// Dopasowanie do bonnibel-backend/app/core/models.py:ChatMessage
-//   message_id, task_id, author_id, text, created_at  (BRAK updated_at).
 export interface ChatMessage {
   messageId: number;
   taskId: number;
@@ -107,10 +122,6 @@ export interface ChatMessage {
   createdAt: string;
 }
 
-// Dopasowanie do bonnibel-backend/app/modules/analytics/schemas.py:AnalyticsOverviewResponse
-// Backend udostępnia jeden endpoint /analytics/overview zwracający komplet metryk.
-//   tasksByStatus — klucze to wartości TaskStatus (TODO/IN_PROGRESS/IN_REVIEW/DONE),
-//   tasksByUser   — klucz to assignee_id (może być pusty/null dla nieprzypisanych).
 export interface AnalyticsOverview {
   taskCount: number;
   doneTasks: number;
@@ -126,15 +137,9 @@ export interface AnalyticsOverview {
   throughputByDay: Record<string, number>;
 }
 
-export interface PullRequest {
-  pullRequestId: number;
-  taskId: number;
-  externalId: string;
-  title: string;
-  url: string;
-  reviewerId: string | null;
-  status: 'OPEN' | 'MERGED' | 'CLOSED';
-  createdAt: string;
-  updatedAt: string;
-  mergedAt: string | null;
+export type AnalyticsByAssignee = Record<string, number>
+
+export interface AnalyticsCommits {
+  commitCount: number;
+  byActor: Record<string, number>;
 }
