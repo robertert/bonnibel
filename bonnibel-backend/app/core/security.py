@@ -23,3 +23,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     expire = datetime.utcnow() + (expires_delta if expires_delta else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def decode_access_token(token: str) -> dict:
+    # Rzuca jwt.PyJWTError (np. ExpiredSignatureError, InvalidTokenError) przy błędnym tokenie.
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

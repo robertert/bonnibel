@@ -93,25 +93,14 @@ export interface ChatMessage {
   createdAt: string;
 }
 
-export interface AnalyticsTaskCount {
-  projectId: number;
+// Dopasowanie do bonnibel-backend/app/modules/analytics/schemas.py:AnalyticsOverviewResponse
+// Backend udostępnia jeden endpoint /analytics/overview zwracający komplet metryk.
+//   tasksByStatus — klucze to wartości TaskStatus (TODO/IN_PROGRESS/IN_REVIEW/DONE),
+//   tasksByUser   — klucz to assignee_id (może być pusty/null dla nieprzypisanych).
+export interface AnalyticsOverview {
   taskCount: number;
-}
-
-// Dopasowanie do bonnibel-backend/app/core/models.py:TaskStatus
-//   TODO, IN_PROGRESS, IN_REVIEW, DONE  (BRAK CLOSED).
-// TaskStatus na froncie zawiera jeszcze CLOSED dla pozostałych modułów,
-// ale analytics liczy tylko statusy z backendu.
-export type AnalyticsByStatus = {
-  TODO: number;
-  IN_PROGRESS: number;
-  IN_REVIEW: number;
-  DONE: number;
-}
-
-export type AnalyticsByAssignee = Record<string, number>
-
-export interface AnalyticsCommits {
-  commitCount: number;
-  byActor: Record<string, number>;
+  doneTasks: number;
+  openTasks: number;
+  tasksByStatus: Record<string, number>;
+  tasksByUser: Record<string, number>;
 }

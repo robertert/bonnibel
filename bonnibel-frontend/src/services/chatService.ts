@@ -1,24 +1,19 @@
 import { apiFetch } from '@/lib/api'
-import { API_BASE_URL, WS_BASE_URL, isUsingFastApiBackend } from '@/lib/env'
+import { WS_BASE_URL } from '@/lib/env'
 import type { ChatMessage } from '@/types/domain'
 
-function jsonServerPath(projectId: number, taskId: number) {
-  if (isUsingFastApiBackend()) {
-    return `/api/projects/${projectId}/tasks/${taskId}/messages`
-  }
-  // json-server: bezpośrednio na kolekcji chatMessages z filtrem
-  return `/chatMessages?taskId=${taskId}&_sort=createdAt&_order=asc`
+// Ścieżki czatu wg bonnibel-backend/app/modules/chat/router.py (router pod prefiksem /api).
+// Base URL w apiFetch zawiera już /api, więc tutaj ścieżki są bez wiodącego /api.
+function messagesUrl(projectId: number, taskId: number) {
+  return `/projects/${projectId}/tasks/${taskId}/messages`
 }
 
 function messageUrl(projectId: number, taskId: number, messageId: number) {
-  if (isUsingFastApiBackend()) {
-    return `/api/projects/${projectId}/tasks/${taskId}/messages/${messageId}`
-  }
-  return `/chatMessages/${messageId}`
+  return `${messagesUrl(projectId, taskId)}/${messageId}`
 }
 
-// Wire format z backendu (snake_case w core/models.py → JSON FastAPI).
-// json-server używa formy bliskiej naszej domenowej; obsługujemy obie.
+// Backend bywa niespójny w nazewnictwie: GET zwraca surowe ORM (snake_case),
+// POST/PATCH zwracają dict w camelCase. Normalizujemy obie formy do domeny.
 type RawMessage = {
   id?: number
   messageId?: number
@@ -44,43 +39,25 @@ function normalize(msg: RawMessage): ChatMessage {
 
 export const chatService = {
   getTaskMessages: async (projectId: number, taskId: number): Promise<ChatMessage[]> => {
-    const raw = await apiFetch<RawMessage[]>(jsonServerPath(projectId, taskId))
+    const raw = await apiFetch<RawMessage[]>(messagesUrl(projectId, taskId))
     return raw.map(normalize)
   },
 
+  // Uwaga: backend (chat/router.py:get_current_user) używa placeholdera autora,
+  // więc parametr authorId nie trafia do bazy — autor ustalany jest po stronie API.
   sendMessage: async (
     projectId: number,
     taskId: number,
-    authorId: string,
+    _authorId: string,
     text: string
   ): Promise<ChatMessage> => {
-    if (isUsingFastApiBackend()) {
-      return apiFetch<ChatMessage>(
-        `/api/projects/${projectId}/tasks/${taskId}/messages`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ text }),
-        }
-      )
-    }
-
-    // json-server: musimy sami złożyć obiekt (autorId, createdAt) i POST-ować na /chatMessages
-    const payload = {
-      taskId,
-      authorId,
-      text,
-      createdAt: new Date().toISOString(),
-    }
-    const created = await apiFetch<RawMessage>('/chatMessages', {
+    const created = await apiFetch<RawMessage>(messagesUrl(projectId, taskId), {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ text }),
     })
     return normalize(created)
   },
 
-  // TODO: backend (app/core/models.py → ChatMessage) nie ma jeszcze pola
-  // updated_at ani endpointu PATCH. Działa na json-server; po stronie FastAPI
-  // wymaga dodania zarówno migracji jak i routera.
   updateMessage: async (
     projectId: number,
     taskId: number,
@@ -108,6 +85,8 @@ export const chatService = {
   },
 }
 
+// Realtime czatu: backend nie ma jeszcze WebSocketu (notification/ws.py puste).
+// Gdy WS_BASE_URL jest pusty, funkcja zwraca null (no-op) i UI działa na refetch.
 export function openTaskChatSocket(
   taskId: number,
   onMessage: (msg: ChatMessage) => void,
@@ -131,6 +110,3 @@ export function openTaskChatSocket(
   }
   return ws
 }
-
-// Re-export bez użycia, gdyby przyszły moduły potrzebowały bazowego URL.
-export const _API_BASE_URL = API_BASE_URL

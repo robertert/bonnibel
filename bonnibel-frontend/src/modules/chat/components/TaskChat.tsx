@@ -11,6 +11,10 @@ type Props = {
 }
 
 export default function TaskChat({ projectId, taskId }: Props) {
+  // Uwaga: dopóki backend (chat/router.py) używa placeholdera autora zamiast
+  // realnego JWT, authorId wiadomości nie odpowiada zalogowanemu userowi —
+  // wykrywanie `mine` oraz kontrola właściciela (403) zadziałają poprawnie
+  // dopiero po podpięciu prawdziwej autoryzacji po stronie backendu.
   const currentUserId = useAuthStore((s) => s.userId) ?? 'anon'
   const accessToken = useAuthStore((s) => s.accessToken)
   const queryClient = useQueryClient()

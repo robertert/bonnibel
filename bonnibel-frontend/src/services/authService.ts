@@ -26,11 +26,11 @@ export const authService = {
     });
   },
 
-  // POST /auth/refresh - Odświeżanie tokenu (Silent Refresh z api.ts)
+  // POST /auth/refresh - Odświeżanie tokenu. Backend oczekuje refresh_token jako query param.
   refresh: (refreshToken: string): Promise<AuthTokens> => {
-    return apiFetch<AuthTokens>('/auth/refresh', {
-      method: 'POST',
-      body: JSON.stringify({ refreshToken }),
-    });
+    return apiFetch<AuthTokens>(
+      `/auth/refresh?refresh_token=${encodeURIComponent(refreshToken)}`,
+      { method: 'POST' }
+    );
   }
 };

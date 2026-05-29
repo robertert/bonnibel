@@ -41,47 +41,20 @@ export default function AnalyticsPage() {
   const { projectId, projects, setProjectId, loading } = useResolvedProjectId()
   const { projectId: routeId } = useParams<{ projectId?: string }>()
 
-  const count = useQuery({
-    queryKey: ['analytics', 'count', projectId],
-    queryFn: () => analyticsService.getTaskCount(projectId!),
+  const overview = useQuery({
+    queryKey: ['analytics', 'overview', projectId],
+    queryFn: () => analyticsService.getOverview(projectId!),
     enabled: projectId != null,
   })
 
-  const byStatus = useQuery({
-    queryKey: ['analytics', 'byStatus', projectId],
-    queryFn: () => analyticsService.getTaskCountByStatus(projectId!),
-    enabled: projectId != null,
-  })
-
-  const byAssignee = useQuery({
-    queryKey: ['analytics', 'byAssignee', projectId],
-    queryFn: () => analyticsService.getTaskCountByAssignee(projectId!),
-    enabled: projectId != null,
-  })
-
-  const closed = useQuery({
-    queryKey: ['analytics', 'closed', projectId],
-    queryFn: () => analyticsService.getClosedTaskHistory(projectId!),
-    enabled: projectId != null,
-  })
-
-  const commits = useQuery({
-    queryKey: ['analytics', 'commits', projectId],
-    queryFn: () => analyticsService.getCommits(projectId!),
-    enabled: projectId != null,
-  })
+  const data = overview.data
+  const byStatus = data?.tasksByStatus ?? {}
 
   const assigneeEntries = useMemo(() => {
-    return Object.entries(byAssignee.data ?? {})
-      .map(([label, value]) => ({ label, value }))
+    return Object.entries(data?.tasksByUser ?? {})
+      .map(([label, value]) => ({ label: label || '(brak)', value }))
       .sort((a, b) => b.value - a.value)
-  }, [byAssignee.data])
-
-  const commitEntries = useMemo(() => {
-    return Object.entries(commits.data?.byActor ?? {})
-      .map(([label, value]) => ({ label, value }))
-      .sort((a, b) => b.value - a.value)
-  }, [commits.data])
+  }, [data])
 
   if (projectId == null) {
     return (
@@ -118,78 +91,29 @@ export default function AnalyticsPage() {
         )}
       </header>
 
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <StatCard label="Wszystkich zadań" value={count.data?.taskCount ?? '—'} tone="info" />
-        <StatCard label="Do zrobienia" value={byStatus.data?.TODO ?? '—'} />
-        <StatCard label="W trakcie" value={byStatus.data?.IN_PROGRESS ?? '—'} tone="warning" />
-        <StatCard label="Review" value={byStatus.data?.IN_REVIEW ?? '—'} />
-        <StatCard label="Zakończone" value={byStatus.data?.DONE ?? '—'} tone="success" />
+      {overview.isError && (
+        <p className="text-sm text-red-600">Nie udało się pobrać analityki projektu.</p>
+      )}
+
+      <section className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <StatCard label="Wszystkich zadań" value={data?.taskCount ?? '—'} tone="info" />
+        <StatCard label="Otwarte" value={data?.openTasks ?? '—'} tone="warning" />
+        <StatCard label="Zakończone" value={data?.doneTasks ?? '—'} tone="success" />
       </section>
 
-      <section className="grid md:grid-cols-2 gap-6">
-        <div className="border border-gray-200 rounded-2xl bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-800 mb-3">Zadania per użytkownik</h2>
-          {byAssignee.isLoading ? (
-            <p className="text-sm text-gray-500">Wczytywanie…</p>
-          ) : (
-            <BarList entries={assigneeEntries} emptyText="Brak przypisanych zadań." />
-          )}
-        </div>
-
-        <div className="border border-gray-200 rounded-2xl bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-800 mb-3">
-            Commity ({commits.data?.commitCount ?? 0})
-          </h2>
-          {commits.isLoading ? (
-            <p className="text-sm text-gray-500">Wczytywanie…</p>
-          ) : (
-            <BarList entries={commitEntries} emptyText="Brak commitów w historii projektu." />
-          )}
-        </div>
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard label="Do zrobienia" value={byStatus.TODO ?? 0} />
+        <StatCard label="W trakcie" value={byStatus.IN_PROGRESS ?? 0} tone="warning" />
+        <StatCard label="Review" value={byStatus.IN_REVIEW ?? 0} />
+        <StatCard label="Zakończone" value={byStatus.DONE ?? 0} tone="success" />
       </section>
 
       <section className="border border-gray-200 rounded-2xl bg-white p-5 shadow-sm">
-        <h2 className="font-semibold text-gray-800 mb-3">Historia zamkniętych zadań</h2>
-        {closed.isLoading ? (
+        <h2 className="font-semibold text-gray-800 mb-3">Zadania per użytkownik</h2>
+        {overview.isLoading ? (
           <p className="text-sm text-gray-500">Wczytywanie…</p>
-        ) : !closed.data || closed.data.length === 0 ? (
-          <p className="text-sm text-gray-500">Brak zamkniętych zadań w tym projekcie.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500 border-b">
-                <th className="py-2 pr-3">Task</th>
-                <th className="py-2 pr-3">Typ</th>
-                <th className="py-2 pr-3">Actor</th>
-                <th className="py-2 pr-3">Tytuł</th>
-                <th className="py-2">Link</th>
-              </tr>
-            </thead>
-            <tbody>
-              {closed.data.map((h) => (
-                <tr key={h.eventId} className="border-b last:border-b-0">
-                  <td className="py-2 pr-3 font-mono">#{h.taskId}</td>
-                  <td className="py-2 pr-3">{h.type}</td>
-                  <td className="py-2 pr-3">{h.actorId}</td>
-                  <td className="py-2 pr-3">{h.title}</td>
-                  <td className="py-2">
-                    {h.url ? (
-                      <a
-                        href={h.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        otwórz
-                      </a>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <BarList entries={assigneeEntries} emptyText="Brak przypisanych zadań." />
         )}
       </section>
     </div>

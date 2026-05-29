@@ -19,11 +19,14 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
     if (refreshToken) {
       try {
-        const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
-        })
+        // Backend (auth/router.py:refresh_token) oczekuje refresh_token jako query param.
+        const refreshRes = await fetch(
+          `${API_BASE_URL}/auth/refresh?refresh_token=${encodeURIComponent(refreshToken)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
 
         if (refreshRes.ok) {
           const data = await refreshRes.json()

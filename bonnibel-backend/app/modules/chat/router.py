@@ -2,18 +2,13 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.dependencies.auth import get_current_user
 
 from app.modules.chat.schemas import SendMessageRequest, UpdateMessageRequest
 from app.modules.chat.service import ChatService
 
 router = APIRouter()
 service = ChatService()
-
-def get_current_user():
-    # Placeholder zamiast prawdziwej autoryzacji
-    class User:
-        user_id = "userid-placeholder"
-    return User()
 
 @router.get("/projects/{project_id}/tasks/{task_id}/messages",)
 async def get_messages(project_id: int, task_id: int, db: Session = Depends(get_db),):
