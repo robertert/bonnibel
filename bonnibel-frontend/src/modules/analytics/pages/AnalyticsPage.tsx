@@ -50,11 +50,21 @@ export default function AnalyticsPage() {
   const data = overview.data
   const byStatus = data?.tasksByStatus ?? {}
 
-  const assigneeEntries = useMemo(() => {
-    return Object.entries(data?.tasksByUser ?? {})
+  const toEntries = (rec: Record<string, number> | undefined) =>
+    Object.entries(rec ?? {})
       .map(([label, value]) => ({ label: label || '(brak)', value }))
       .sort((a, b) => b.value - a.value)
-  }, [data])
+
+  const assigneeEntries = useMemo(() => toEntries(data?.tasksByUser), [data])
+  const reviewerEntries = useMemo(() => toEntries(data?.tasksByReviewer), [data])
+  const wipEntries = useMemo(() => toEntries(data?.wipByUser), [data])
+  const throughputEntries = useMemo(
+    () =>
+      Object.entries(data?.throughputByDay ?? {})
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [data]
+  )
 
   if (projectId == null) {
     return (
@@ -102,19 +112,63 @@ export default function AnalyticsPage() {
       </section>
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard
+          label="Ukończenie"
+          value={data ? `${data.completionRate}%` : '—'}
+          tone="success"
+        />
+        <StatCard label="Nieprzypisane" value={data?.unassignedTasks ?? '—'} tone="warning" />
+        <StatCard label="Utknięte (>7 dni)" value={data?.staleTasks ?? '—'} tone="warning" />
+        <StatCard
+          label="Śr. czas realizacji"
+          value={data?.avgCycleTimeHours != null ? `${data.avgCycleTimeHours} h` : '—'}
+          tone="info"
+        />
+      </section>
+
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Do zrobienia" value={byStatus.TODO ?? 0} />
         <StatCard label="W trakcie" value={byStatus.IN_PROGRESS ?? 0} tone="warning" />
         <StatCard label="Review" value={byStatus.IN_REVIEW ?? 0} />
         <StatCard label="Zakończone" value={byStatus.DONE ?? 0} tone="success" />
       </section>
 
-      <section className="border border-gray-200 rounded-2xl bg-white p-5 shadow-sm">
-        <h2 className="font-semibold text-gray-800 mb-3">Zadania per użytkownik</h2>
-        {overview.isLoading ? (
-          <p className="text-sm text-gray-500">Wczytywanie…</p>
-        ) : (
-          <BarList entries={assigneeEntries} emptyText="Brak przypisanych zadań." />
-        )}
+      <section className="grid md:grid-cols-2 gap-6">
+        <div className="border border-gray-200 rounded-2xl bg-white p-5 shadow-sm">
+          <h2 className="font-semibold text-gray-800 mb-3">Zadania per użytkownik</h2>
+          {overview.isLoading ? (
+            <p className="text-sm text-gray-500">Wczytywanie…</p>
+          ) : (
+            <BarList entries={assigneeEntries} emptyText="Brak przypisanych zadań." />
+          )}
+        </div>
+
+        <div className="border border-gray-200 rounded-2xl bg-white p-5 shadow-sm">
+          <h2 className="font-semibold text-gray-800 mb-3">Zadania per recenzent</h2>
+          {overview.isLoading ? (
+            <p className="text-sm text-gray-500">Wczytywanie…</p>
+          ) : (
+            <BarList entries={reviewerEntries} emptyText="Brak przypisanych recenzentów." />
+          )}
+        </div>
+
+        <div className="border border-gray-200 rounded-2xl bg-white p-5 shadow-sm">
+          <h2 className="font-semibold text-gray-800 mb-3">W toku per użytkownik (WIP)</h2>
+          {overview.isLoading ? (
+            <p className="text-sm text-gray-500">Wczytywanie…</p>
+          ) : (
+            <BarList entries={wipEntries} emptyText="Nikt nie ma zadań w toku." />
+          )}
+        </div>
+
+        <div className="border border-gray-200 rounded-2xl bg-white p-5 shadow-sm">
+          <h2 className="font-semibold text-gray-800 mb-3">Zakończone w czasie</h2>
+          {overview.isLoading ? (
+            <p className="text-sm text-gray-500">Wczytywanie…</p>
+          ) : (
+            <BarList entries={throughputEntries} emptyText="Brak zakończonych zadań." />
+          )}
+        </div>
       </section>
     </div>
   )

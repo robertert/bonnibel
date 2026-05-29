@@ -95,7 +95,7 @@ export default function ChatMessageBubble({ message, mine, onEdit, onDelete }: P
             mine ? 'text-blue-100' : 'text-gray-600'
           }`}
         >
-          {message.authorId}
+          {message.authorEmail ?? message.authorId}
         </div>
 
         {isEditing ? (

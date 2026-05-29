@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.modules.tasks_and_users.schemas import (
     CreateTaskRequest,
+    ProjectOut,
     TaskOut,
     UpdateProfileRequest,
     UpdateStatusRequest,
@@ -20,6 +21,7 @@ from app.modules.tasks_and_users.service import (
     create_task,
     get_task,
     get_user,
+    list_projects,
     list_tasks,
     request_close,
     update_profile,
@@ -29,6 +31,11 @@ from app.modules.tasks_and_users.service import (
 
 
 router = APIRouter(tags=["tasks_and_users"])
+
+
+@router.get("/projects", response_model=list[ProjectOut])
+def read_projects(db: Session = Depends(get_db)) -> list[ProjectOut]:
+    return list_projects(db)
 
 
 @router.get("/users/{user_id}", response_model=UserOut)

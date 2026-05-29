@@ -26,6 +26,15 @@ class UpdateStatusRequest(BaseModel):
     status: str
 
 
+class ProjectOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    projectId: int
+    name: str
+    description: str | None = None
+    ownerId: str | None = None
+
+
 class TaskOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

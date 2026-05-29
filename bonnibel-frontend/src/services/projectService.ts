@@ -1,5 +1,4 @@
 import { apiFetch } from '@/lib/api'
-import { isUsingFastApiBackend } from '@/lib/env'
 
 export interface ProjectSummary {
   projectId: number
@@ -9,11 +8,8 @@ export interface ProjectSummary {
 }
 
 export const projectService = {
+  // Base URL w apiFetch zawiera już /api, więc ścieżka jest bez wiodącego /api.
   list: async (): Promise<ProjectSummary[]> => {
-    if (isUsingFastApiBackend()) {
-      return apiFetch<ProjectSummary[]>('/api/projects')
-    }
-    // json-server: kolekcja `projects`
     return apiFetch<ProjectSummary[]>('/projects')
   },
 }

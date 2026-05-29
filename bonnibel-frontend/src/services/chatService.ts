@@ -22,6 +22,8 @@ type RawMessage = {
   task_id?: number
   authorId?: string
   author_id?: string
+  authorEmail?: string | null
+  author_email?: string | null
   text?: string
   createdAt?: string
   created_at?: string
@@ -32,6 +34,7 @@ function normalize(msg: RawMessage): ChatMessage {
     messageId: (msg.messageId ?? msg.message_id ?? msg.id) as number,
     taskId: (msg.taskId ?? msg.task_id) as number,
     authorId: (msg.authorId ?? msg.author_id) as string,
+    authorEmail: msg.authorEmail ?? msg.author_email ?? null,
     text: msg.text as string,
     createdAt: (msg.createdAt ?? msg.created_at) as string,
   }

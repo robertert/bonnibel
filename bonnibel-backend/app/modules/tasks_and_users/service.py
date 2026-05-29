@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.models import Project, Task, User
 from app.modules.tasks_and_users.schemas import (
     CreateTaskRequest,
+    ProjectOut,
     TaskOut,
     UpdateProfileRequest,
     UpdateStatusRequest,
@@ -28,6 +29,20 @@ def _to_user_out(user: User) -> UserOut:
         status=user.status,
         isOnline=user.is_online,
     )
+
+
+def _to_project_out(project: Project) -> ProjectOut:
+    return ProjectOut(
+        projectId=project.project_id,
+        name=project.name,
+        description=project.description,
+        ownerId=project.owner_id,
+    )
+
+
+def list_projects(db: Session) -> list[ProjectOut]:
+    projects = db.scalars(select(Project).order_by(Project.project_id.asc())).all()
+    return [_to_project_out(project) for project in projects]
 
 
 def _to_task_out(task: Task) -> TaskOut:

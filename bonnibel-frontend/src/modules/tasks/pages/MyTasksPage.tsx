@@ -1,19 +1,27 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { taskService } from '@/services/taskService'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import type { Task } from '@/types/domain'
 
 export default function MyTasksPage() {
+  const userId = useAuthStore((s) => s.userId)
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!userId) {
+      setTasks([])
+      setLoading(false)
+      return
+    }
     setLoading(true)
-    taskService.getMyTasks(1)
+    // Filtrujemy zadania po realnym id zalogowanego użytkownika (a nie po stałym 'user-1').
+    taskService.getUserTasks(1, userId)
       .then(setTasks)
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [])
+  }, [userId])
 
   if (loading) {
     return <div style={{ padding: '24px', textAlign: 'center' }}>Ładowanie Twoich zadań...</div>

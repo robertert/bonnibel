@@ -89,6 +89,7 @@ export interface ChatMessage {
   messageId: number;
   taskId: number;
   authorId: string;
+  authorEmail?: string | null;
   text: string;
   createdAt: string;
 }
@@ -101,6 +102,13 @@ export interface AnalyticsOverview {
   taskCount: number;
   doneTasks: number;
   openTasks: number;
+  completionRate: number;
+  unassignedTasks: number;
+  staleTasks: number;
+  avgCycleTimeHours: number | null;
   tasksByStatus: Record<string, number>;
   tasksByUser: Record<string, number>;
+  tasksByReviewer: Record<string, number>;
+  wipByUser: Record<string, number>;
+  throughputByDay: Record<string, number>;
 }

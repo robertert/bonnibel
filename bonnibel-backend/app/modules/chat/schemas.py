@@ -16,5 +16,6 @@ class ChatMessageResponse(BaseModel):
     messageId: int
     taskId: int
     authorId: str
+    authorEmail: str | None = None
     text: str
     createdAt: datetime
