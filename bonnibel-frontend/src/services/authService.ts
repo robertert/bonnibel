@@ -25,6 +25,12 @@ export const authService = {
       body: JSON.stringify({ email, password }), // Backend oczekuje pól "email" i "password"
     });
   },
+  logout: (refreshToken: string): Promise<{ message: string }> => {
+    return apiFetch<{ message: string }>('/auth/logout', {
+      method: 'POST',
+      body: JSON.stringify({ refresh_token: refreshToken }), // zgodnie ze schemas.LogoutRequest
+    });
+  },
 
   // POST /auth/refresh - Odświeżanie tokenu (Silent Refresh z api.ts)
   refresh: (refreshToken: string): Promise<AuthResponse> => {
@@ -34,3 +40,4 @@ export const authService = {
     });
   }
 };
+

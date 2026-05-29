@@ -65,9 +65,17 @@ export default function ProfilePage() {
     }
   }
 
-  const handleLogout = () => {
-    logoutInStore() 
-    navigate('/login')
+  // Zmieniamy funkcję na async
+  const handleLogout = async () => {
+    try {
+      // Czekamy, aż serwer usunie token z bazy i Zustand wyczyści localStorage
+      await logoutInStore() 
+    } catch (err) {
+      console.error("Błąd podczas wylogowywania w komponencie:", err)
+    } finally {
+      // Dopiero gdy wszystko się skończy, bezpiecznie przekierowujemy na /login
+      navigate('/login')
+    }
   }
 
   if (loading) {
