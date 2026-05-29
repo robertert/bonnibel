@@ -90,9 +90,15 @@ export const chatService = {
 
 // Realtime czatu: backend nie ma jeszcze WebSocketu (notification/ws.py puste).
 // Gdy WS_BASE_URL jest pusty, funkcja zwraca null (no-op) i UI działa na refetch.
+// Zdarzenia rozgłaszane przez backend po WS (envelope z typem operacji).
+export type ChatSocketEvent =
+  | { type: 'created'; message: ChatMessage }
+  | { type: 'updated'; message: ChatMessage }
+  | { type: 'deleted'; messageId: number }
+
 export function openTaskChatSocket(
   taskId: number,
-  onMessage: (msg: ChatMessage) => void,
+  onEvent: (event: ChatSocketEvent) => void,
   token: string | null
 ): WebSocket | null {
   if (!WS_BASE_URL) {
@@ -105,8 +111,12 @@ export function openTaskChatSocket(
   const ws = new WebSocket(url.toString())
   ws.onmessage = (event) => {
     try {
-      const data = JSON.parse(event.data) as ChatMessage
-      onMessage(data)
+      const raw = JSON.parse(event.data)
+      if (raw?.type === 'deleted') {
+        onEvent({ type: 'deleted', messageId: raw.messageId as number })
+      } else if (raw?.type === 'created' || raw?.type === 'updated') {
+        onEvent({ type: raw.type, message: normalize(raw.message as RawMessage) })
+      }
     } catch (err) {
       console.warn('Niepoprawna wiadomość WS', event.data, err)
     }

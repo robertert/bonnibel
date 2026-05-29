@@ -38,7 +38,7 @@ class ChatService:
         emails = self._author_emails(db, [author_id])
         payload = self._serialize(message, emails.get(author_id))
         # Rozgłoś nową wiadomość do wszystkich nasłuchujących WS na tym zadaniu.
-        await chat_manager.broadcast(task_id, payload)
+        await chat_manager.broadcast(task_id, {"type": "created", "message": payload})
         return payload
 
     async def update_message(self, db: Session, message_id: int, current_user_id: str, text: str,):
@@ -56,7 +56,9 @@ class ChatService:
         db.refresh(message)
 
         emails = self._author_emails(db, [message.author_id])
-        return self._serialize(message, emails.get(message.author_id))
+        payload = self._serialize(message, emails.get(message.author_id))
+        await chat_manager.broadcast(message.task_id, {"type": "updated", "message": payload})
+        return payload
 
     async def delete_message(self, db: Session, message_id: int, current_user_id: str,):
         message = await self.repo.get_by_id(db, message_id)
@@ -67,4 +69,6 @@ class ChatService:
         if message.author_id != current_user_id:
             raise HTTPException(403, "Forbidden")
 
+        task_id = message.task_id
         await self.repo.delete(db, message)
+        await chat_manager.broadcast(task_id, {"type": "deleted", "messageId": message_id})

@@ -82,20 +82,21 @@ export default function TaskChat({ projectId, taskId }: Props) {
   useEffect(() => {
     const ws = openTaskChatSocket(
       taskId,
-      (msg) => {
-        queryClient.setQueryData<ChatMessage[]>(
-          ['chat', projectId, taskId],
-          (old: ChatMessage[] = []) => {
-            if (old.some((m) => m.messageId === msg.messageId)) return old
-            return [...old, msg]
-          }
-        )
+      (event) => {
+        if (event.type === 'created') {
+          appendMessage(event.message)
+        } else if (event.type === 'updated') {
+          replaceMessage(event.message)
+        } else if (event.type === 'deleted') {
+          removeMessage(event.messageId)
+        }
       },
       accessToken,
     )
     return () => {
       ws?.close()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, taskId, accessToken, queryClient])
 
   useEffect(() => {

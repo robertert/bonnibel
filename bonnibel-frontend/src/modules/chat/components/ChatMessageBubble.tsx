@@ -86,13 +86,13 @@ export default function ChatMessageBubble({ message, mine, onEdit, onDelete }: P
       <div
         className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm shadow-sm ${
           mine
-            ? 'bg-blue-600 text-white rounded-br-md'
+            ? 'bg-blue-100 border border-blue-200 text-gray-900 rounded-br-md'
             : 'bg-white border border-gray-200 text-gray-900 rounded-bl-md'
         }`}
       >
         <div
           className={`text-xs mb-0.5 font-medium ${
-            mine ? 'text-blue-100' : 'text-gray-600'
+            mine ? 'text-blue-700' : 'text-gray-600'
           }`}
         >
           {message.authorEmail ?? message.authorId}
@@ -145,7 +145,7 @@ export default function ChatMessageBubble({ message, mine, onEdit, onDelete }: P
 
         <div
           className={`flex items-center justify-between gap-3 text-[10px] mt-1 ${
-            mine ? 'text-blue-200' : 'text-gray-500'
+            mine ? 'text-blue-700' : 'text-gray-500'
           }`}
         >
           <span>{formatTime(message.createdAt)}</span>
@@ -157,7 +157,7 @@ export default function ChatMessageBubble({ message, mine, onEdit, onDelete }: P
                   type="button"
                   onClick={startEdit}
                   className={`hover:underline ${
-                    mine ? 'text-blue-100' : 'text-gray-600'
+                    mine ? 'text-blue-700' : 'text-gray-600'
                   }`}
                 >
                   Edytuj
@@ -169,7 +169,7 @@ export default function ChatMessageBubble({ message, mine, onEdit, onDelete }: P
                   onClick={handleDelete}
                   disabled={busy}
                   className={`hover:underline ${
-                    mine ? 'text-blue-100' : 'text-red-600'
+                    mine ? 'text-red-600' : 'text-red-600'
                   }`}
                 >
                   Usuń
