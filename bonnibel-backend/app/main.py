@@ -22,7 +22,7 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
 
-app.include_router(project_router, prefix="/api/project", tags=["Project"])
+app.include_router(project_router)  # prefix już ustawiony w routerze
 
 # (Health Check)
 @app.get("/api/health", tags=["System"])

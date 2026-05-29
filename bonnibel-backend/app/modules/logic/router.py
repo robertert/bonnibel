@@ -5,29 +5,10 @@ from typing import List
 # from app.dependencies.db import get_db
 from app.core.database import get_db
 # from app.modules.auth.router import get_current_user  # tymczasowo
-from fastapi import Header
-import jwt
-from app.core.security import SECRET_KEY, ALGORITHM
-
-def get_current_user(authorization: str = Header(None)):
-    """Tymczasowa funkcja pobierająca user_id z tokena JWT"""
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
-        )
-    
-    token = authorization.split(" ")[1]
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        return user_id
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
-
+from fastapi import Depends
+def get_current_user_dummy():
+    """Tymczasowy dummy do testowania bez autoryzacji"""
+    return "2f2c28472d4f43048d322a4256b8472a"
 
 
 
@@ -52,7 +33,7 @@ router = APIRouter(prefix="/api/project", tags=["Project"])
 @router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 def create_project(
     data: ProjectCreate,
-    current_user: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user_dummy),  # TODO: zastąpić prawdziwą autoryzacją później
     db: Session = Depends(get_db)
 ):
     service = ProjectService(db)
@@ -61,7 +42,7 @@ def create_project(
 
 @router.get("/my", response_model=List[ProjectSummary])
 def get_my_projects(
-    current_user: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user_dummy),  # TODO: zastąpić prawdziwą autoryzacją później
     db: Session = Depends(get_db)
 ):
     service = ProjectService(db)
@@ -71,7 +52,7 @@ def get_my_projects(
 @router.get("/{project_id}", response_model=ProjectResponse)
 def get_project(
     project_id: int,
-    current_user: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user_dummy),  # TODO: zastąpić prawdziwą autoryzacją później
     db: Session = Depends(get_db)
 ):
     service = ProjectService(db)
@@ -85,7 +66,7 @@ def get_project(
 def update_project(
     project_id: int,
     data: ProjectUpdate,
-    current_user: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user_dummy),  # TODO: zastąpić prawdziwą autoryzacją później
     db: Session = Depends(get_db)
 ):
     service = ProjectService(db)
@@ -95,7 +76,7 @@ def update_project(
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_project(
     project_id: int,
-    current_user: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user_dummy),  # TODO: zastąpić prawdziwą autoryzacją później
     db: Session = Depends(get_db)
 ):
     service = ProjectService(db)
@@ -107,7 +88,7 @@ def delete_project(
 def add_project_member(
     project_id: int,
     data: ProjectMemberCreate,
-    current_user: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user_dummy),  # TODO: zastąpić prawdziwą autoryzacją później
     db: Session = Depends(get_db)
 ):
     service = MembershipService(db)
@@ -117,7 +98,7 @@ def add_project_member(
 @router.get("/{project_id}/members", response_model=List[ProjectMemberResponse])
 def get_project_members(
     project_id: int,
-    current_user: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user_dummy),  # TODO: zastąpić prawdziwą autoryzacją później
     db: Session = Depends(get_db)
 ):
     service = MembershipService(db)
@@ -129,7 +110,7 @@ def change_member_role(
     project_id: int,
     user_id: str,
     data: MemberRoleUpdate,
-    current_user: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user_dummy),  # TODO: zastąpić prawdziwą autoryzacją później
     db: Session = Depends(get_db)
 ):
     service = MembershipService(db)
@@ -140,7 +121,7 @@ def change_member_role(
 def remove_project_member(
     project_id: int,
     user_id: str,
-    current_user: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user_dummy),  # TODO: zastąpić prawdziwą autoryzacją później
     db: Session = Depends(get_db)
 ):
     service = MembershipService(db)
@@ -152,7 +133,7 @@ def remove_project_member(
 def connect_integration(
     project_id: int,
     data: ProjectIntegrationCreate,
-    current_user: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user_dummy),  # TODO: zastąpić prawdziwą autoryzacją później
     db: Session = Depends(get_db)
 ):
     service = ProjectService(db)
@@ -166,7 +147,7 @@ def disconnect_integration(
     project_id: int,
     provider: str, # w przyszłości można rozważyć bardziej rozbudowany identyfikator integracji,
                     # jeśli będzie potrzeba obsługi wielu integracji tego samego typu
-    current_user: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_user_dummy),  # TODO: zastąpić prawdziwą autoryzacją później
     db: Session = Depends(get_db)
 ):
     service = ProjectService(db)

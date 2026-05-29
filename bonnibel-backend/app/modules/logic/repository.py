@@ -34,6 +34,15 @@ class ProjectRepository:
         self.db.query(Project).filter(Project.project_id == project_id).delete()
         self.db.commit()
 
+    def delete(self, project_id: int) -> None:
+        # usuwamy powiązane rekordy memberów
+        self.db.query(ProjectMember).filter(
+            ProjectMember.project_id == project_id
+        ).delete()
+        
+        self.db.query(Project).filter(Project.project_id == project_id).delete()
+        self.db.commit()
+
 
 class ProjectMemberRepository:
     def __init__(self, db: Session):
