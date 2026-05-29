@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.models import User
 from app.modules.chat.repository import ChatRepository
+from app.modules.notification.manager import chat_manager
 
 
 class ChatService:
@@ -35,7 +36,10 @@ class ChatService:
     async def send_message(self, db: Session, task_id: int, author_id: str, text: str):
         message = await self.repo.create(db=db, task_id=task_id, author_id=author_id, text=text,)
         emails = self._author_emails(db, [author_id])
-        return self._serialize(message, emails.get(author_id))
+        payload = self._serialize(message, emails.get(author_id))
+        # Rozgłoś nową wiadomość do wszystkich nasłuchujących WS na tym zadaniu.
+        await chat_manager.broadcast(task_id, payload)
+        return payload
 
     async def update_message(self, db: Session, message_id: int, current_user_id: str, text: str,):
         message = await self.repo.get_by_id(db, message_id)
