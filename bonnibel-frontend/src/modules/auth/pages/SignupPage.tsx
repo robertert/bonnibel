@@ -2,25 +2,29 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '@/services/authService';
-import { useAuthStore } from '../store/authStore';
 
 export const SignupPage = () => {
-  const loginInStore = useAuthStore((state) => state.login);
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  
   const { register, handleSubmit, formState: { isSubmitting } } = useForm();
 
   const onSubmit = async (data: any) => {
     setError(null);
     try {
-      const res = await authService.signup(data.userId, data.password);
-      // Logujemy użytkownika wstępnie (mamy tokeny)
-      loginInStore(res.accessToken, res.refreshToken, res.userId);
-      // Przekierowujemy do obowiązkowego kroku 2: uzupełnienie danych profilu
-      navigate('/profile-setup');
+      // Przekazujemy wszystkie dane wymagane przez backendowy UserCreate
+      await authService.signup({
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        surname: data.surname
+      });
+      
+      // Po udanej rejestracji przerzucamy usera do logowania
+      navigate('/login');
     } catch (err: any) {
-      setError('Identyfikator użytkownika jest już zajęty.');
+      setError('Ten adres e-mail jest już zajęty.');
     }
   };
 
@@ -30,8 +34,18 @@ export const SignupPage = () => {
         <h2 className="mb-6 text-2xl font-bold text-center text-gray-800">Rejestracja - Bonnibel</h2>
         
         <div className="mb-4">
-          <label className="block mb-2 text-sm font-medium text-gray-700">Wybierz Identyfikator (Login):</label>
-          <input {...register('userId', { required: true })} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" style={{ borderColor: '#acc6ec', color: 'black' }} />
+          <label className="block mb-2 text-sm font-medium text-gray-700">Imię:</label>
+          <input {...register('name', { required: true })} className="w-full px-3 py-2 border rounded-md" style={{ borderColor: '#acc6ec', color: 'black', backgroundColor: 'white' }} />
+        </div>
+
+        <div className="mb-4">
+          <label className="block mb-2 text-sm font-medium text-gray-700">Nazwisko:</label>
+          <input {...register('surname', { required: true })} className="w-full px-3 py-2 border rounded-md" style={{ borderColor: '#acc6ec', color: 'black', backgroundColor: 'white' }} />
+        </div>
+
+        <div className="mb-4">
+          <label className="block mb-2 text-sm font-medium text-gray-700">E-mail:</label>
+          <input type="email" {...register('email', { required: true })} className="w-full px-3 py-2 border rounded-md" style={{ borderColor: '#acc6ec', color: 'black', backgroundColor: 'white' }} />
         </div>
 
         <div className="mb-4">
@@ -40,13 +54,13 @@ export const SignupPage = () => {
             <input 
               type={showPassword ? 'text' : 'password'} 
               {...register('password', { required: true })} 
-              className="w-full px-3 py-2 pr-12 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              className="w-full px-3 py-2 pr-12 border rounded-md" 
               style={{ borderColor: '#acc6ec', color: 'black', backgroundColor: 'white' }} 
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-gray-500 hover:text-gray-700"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-gray-500"
               style={{ background: 'none', border: 'none', cursor: 'pointer' }}
             >
               {showPassword ? 'Ukryj' : 'Pokaż'}

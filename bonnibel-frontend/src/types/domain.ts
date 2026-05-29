@@ -2,7 +2,7 @@
 // TODO: dopracować po zdefiniowaniu API backendu.
 
 export type ProjectRole = 'OWNER' | 'DEVELOPER' | 'REVIEWER'
-export type UserStatus = 'AVAILABLE' | 'BUSY' | 'OPEN_TO_TASKS'
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BANNED'
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'CLOSED'
 export type PullRequestStatus = 'OPEN' | 'APPROVED' | 'DECLINED' | 'MERGED'
 export type IntegrationProvider = 'GITHUB' | 'JIRA' | 'CONFLUENCE'
@@ -73,14 +73,14 @@ export interface TaskHistory {
 
 
 export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
+  access_token: string;
+  refresh_token: string;
 }
 
 export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  userId: string;
+  access_token: string;
+  refresh_token: string;
+  user_id?: string;
 }
 
 // Dopasowanie do bonnibel-backend/app/core/models.py:ChatMessage
