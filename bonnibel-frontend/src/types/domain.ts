@@ -72,6 +72,18 @@ export interface TaskHistory {
 
 
 
+export interface Notification {
+  notificationId: number
+  userId: string
+  type: NotificationType
+  title: string
+  message: string
+  linkUrl: string | null
+  isRead: boolean
+  isDelivered: boolean
+  createdAt: string
+}
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;

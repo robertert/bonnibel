@@ -319,15 +319,15 @@ Dodatkowo klienty wykorzystują **Config Repository**, który dostarcza dane kon
 
 ## **Notification Module** {#notification-module}
 
-Moduł powiadomień odpowiada za dostarczanie informacji o zdarzeniach w systemie do odpowiednich użytkowników. Obsługuje zarówno wybór odbiorców, jak i samo wysyłanie oraz przechowywanie powiadomień.
+Moduł powiadomień odpowiada za dostarczanie informacji o zdarzeniach w systemie do odpowiednich użytkowników. Obsługuje zarówno wybór odbiorców, jak i samo wysyłanie oraz przechowywanie powiadomień, a także czat powiązany z zadaniami.
 
-Centralnym elementem modułu jest **Notification Service**, który orkiestruje cały proces — od przyjęcia zdarzenia, przez wyznaczenie odbiorców, aż po wysłanie powiadomień.
+Centralnym elementem modułu jest **Notification Service**, który orkiestruje cały proces — od przyjęcia zdarzenia, przez wyznaczenie odbiorców, aż po wysłanie i utrwalenie powiadomień w bazie danych.
 
-Do komunikacji w czasie rzeczywistym wykorzystywany jest **WS Module**, który odpowiada za wysyłanie powiadomień do aktualnie połączonych użytkowników. Informacja o tym, czy użytkownik jest online, przechowywana jest w **Online Repository**.
+Do komunikacji w czasie rzeczywistym wykorzystywany jest **WS Module**, który dostarcza powiadomienia oraz wiadomości czatu do aktualnie połączonych użytkowników. Informacja o tym, którzy użytkownicy są online, przechowywana jest w pamięci przez **Connection Manager** w postaci słownika połączeń WebSocket.
 
-Powiadomienia są zapisywane w bazie danych za pomocą **Notification Repository**, co pozwala użytkownikowi na ich późniejsze przeglądanie oraz oznaczanie jako przeczytane.
+Dobór odbiorców realizowany jest przez **Recipient Resolver**, który na podstawie typu zdarzenia oraz kontekstu zadania określa, do kogo powinno zostać wysłane powiadomienie. Aby uniknąć cyklicznych zależności z modułem logiki biznesowej, Recipient Resolver korzysta z **Task Recipient Snapshot** — denormalizowanej kopii ról przypisanych do zadania (właściciel, wykonawca, recenzent). Snapshot jest aktualizowany przez moduł logiki za każdym razem, gdy zadanie zostaje utworzone lub zmienią się jego role; jako efekt uboczny, wykonawca i recenzent są automatycznie subskrybowani do powiadomień o tym zadaniu.
 
-Dobór odbiorców realizowany jest przez **Recipient Resolver**, który na podstawie typu zdarzenia określa, do kogo powinno zostać wysłane powiadomienie. W tym celu korzysta on z **Project Membership Repository** (np. do znalezienia ownera, reviewera lub uczestników projektu) oraz **Task Subscription Repository** (do określenia użytkowników subskrybujących dane zadanie).
+Subskrypcje zadań przechowywane są w tabeli **Task Subscriptions** i pozwalają użytkownikom śledzić wybrane zadania niezależnie od przypisanej roli.
 
 ![][image7]
 

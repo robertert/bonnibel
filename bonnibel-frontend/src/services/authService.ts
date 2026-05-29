@@ -2,23 +2,20 @@ import { apiFetch } from '@/lib/api';
 import type { AuthResponse, AuthTokens } from '@/types/domain';
 
 export const authService = {
-  // POST /api/auth/signup
-  signup: (userId: string, password: string): Promise<AuthResponse> => {
-    return apiFetch<AuthResponse>('/auth/register', {
+  signup: (email: string, password: string, name: string, surname: string): Promise<AuthTokens> => {
+    return apiFetch<AuthTokens>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ userId, password }),
+      body: JSON.stringify({ email, password, name, surname }),
     });
   },
 
-  // POST /api/auth/login
-  login: (userId: string, password: string): Promise<AuthResponse> => {
+  login: (email: string, password: string): Promise<AuthResponse> => {
     return apiFetch<AuthResponse>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ userId, password }),
+      body: JSON.stringify({ email, password }),
     });
   },
 
-  // POST /api/auth/refresh
   refresh: (refreshToken: string): Promise<AuthTokens> => {
     return apiFetch<AuthTokens>('/auth/refresh', {
       method: 'POST',
