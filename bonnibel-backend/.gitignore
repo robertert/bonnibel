@@ -1,8 +1,12 @@
 .env
 bonnibel_venv/
+venv/
+.venv
 tmp.py
+*.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
