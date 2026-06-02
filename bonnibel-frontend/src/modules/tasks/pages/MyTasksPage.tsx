@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { taskService } from '@/services/taskService'
 import type { Task } from '@/types/domain'
@@ -8,7 +8,6 @@ export default function MyTasksPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setLoading(true)
     taskService.getMyTasks(1)
       .then(setTasks)
       .catch(console.error)

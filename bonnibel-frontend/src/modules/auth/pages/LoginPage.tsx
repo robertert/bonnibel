@@ -4,14 +4,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '@/services/authService';
 import { useAuthStore } from '../store/authStore';
 
+type LoginFormData = {
+  userId: string
+  password: string
+}
+
 export const LoginPage = () => {
   const loginInStore = useAuthStore((state) => state.login);
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm();
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm<LoginFormData>();
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: LoginFormData) => {
     setError(null);
     try {
       const res = await authService.login(data.userId, data.password);
@@ -19,7 +24,7 @@ export const LoginPage = () => {
       loginInStore(res.accessToken, res.refreshToken, res.userId);
       // Przekierowanie do pulpitu aplikacji
       navigate('/profile');
-    } catch (err: any) {
+    } catch {
       setError('Nieprawidłowy identyfikator lub hasło.');
     }
   };

@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { analyticsService } from '@/services/analyticsService'
@@ -23,14 +23,8 @@ function useResolvedProjectId(): {
     enabled: !routeId,
   })
 
-  useEffect(() => {
-    if (!selected && !routeId && projects.length > 0) {
-      setSelected(projects[0].projectId)
-    }
-  }, [projects, selected, routeId])
-
   return {
-    projectId: routeId ? Number(routeId) : selected,
+    projectId: routeId ? Number(routeId) : selected ?? projects[0]?.projectId ?? null,
     projects: projects.map((p) => ({ projectId: p.projectId, name: p.name })),
     setProjectId: setSelected,
     loading: isLoading,

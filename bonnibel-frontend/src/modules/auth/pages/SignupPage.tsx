@@ -4,14 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '@/services/authService';
 import { useAuthStore } from '../store/authStore';
 
+type SignupFormData = {
+  userId: string
+  password: string
+}
+
 export const SignupPage = () => {
   const loginInStore = useAuthStore((state) => state.login);
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm();
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm<SignupFormData>();
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: SignupFormData) => {
     setError(null);
     try {
       const res = await authService.signup(data.userId, data.password);
@@ -19,7 +24,7 @@ export const SignupPage = () => {
       loginInStore(res.accessToken, res.refreshToken, res.userId);
       // Przekierowujemy do obowiązkowego kroku 2: uzupełnienie danych profilu
       navigate('/profile-setup');
-    } catch (err: any) {
+    } catch {
       setError('Identyfikator użytkownika jest już zajęty.');
     }
   };

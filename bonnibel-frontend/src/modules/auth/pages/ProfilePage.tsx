@@ -20,7 +20,6 @@ export default function ProfilePage() {
   const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
-    setLoading(true)
     userService.getCurrentUser()
       .then(currentUser => {
         setUser(currentUser)

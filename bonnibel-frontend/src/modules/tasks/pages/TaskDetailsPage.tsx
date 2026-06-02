@@ -12,7 +12,6 @@ export default function TaskDetailsPage() {
 
   useEffect(() => {
     if (projectId && taskId) {
-      setLoading(true)
       taskService.getTask(Number(projectId), Number(taskId))
         .then(setTask)
         .catch(console.error)
