@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { taskService } from '@/services/taskService'
 import type { Task } from '@/types/domain'
@@ -7,6 +7,31 @@ export default function TasksListPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [creating, setCreating] = useState(false)
+
+  const handleCreate = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!projectId || !title.trim() || creating) return
+    setCreating(true)
+    try {
+      const created = await taskService.createTask(Number(projectId), {
+        title: title.trim(),
+        description: description.trim(),
+      })
+      setTasks((prev) => [created, ...prev])
+      setTitle('')
+      setDescription('')
+      setShowForm(false)
+    } catch (err) {
+      console.error('Nie udało się utworzyć zadania', err)
+      window.alert('Nie udało się utworzyć zadania.')
+    } finally {
+      setCreating(false)
+    }
+  }
 
   useEffect(() => {
     if (projectId) {
@@ -26,10 +51,45 @@ export default function TasksListPage() {
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h2 style={{ margin: 0 }}>Zadania projektu #{projectId}</h2>
-        <button style={{ padding: '8px 16px', background: '#0070f3', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-          + Utwórz zadanie
+        <button
+          onClick={() => setShowForm((s) => !s)}
+          style={{ padding: '8px 16px', background: '#0070f3', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+        >
+          {showForm ? 'Anuluj' : '+ Utwórz zadanie'}
         </button>
       </div>
+
+      {showForm && (
+        <form
+          onSubmit={handleCreate}
+          style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', background: 'white', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}
+        >
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Tytuł zadania"
+            autoFocus
+            style={{ padding: '8px 12px', border: '1px solid #cbd5e0', borderRadius: '6px', fontSize: '14px', color: '#1a202c', backgroundColor: 'white' }}
+          />
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Opis (opcjonalnie)"
+            rows={3}
+            style={{ padding: '8px 12px', border: '1px solid #cbd5e0', borderRadius: '6px', fontSize: '14px', color: '#1a202c', backgroundColor: 'white', resize: 'vertical' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <button
+              type="submit"
+              disabled={creating || !title.trim()}
+              style={{ padding: '8px 16px', background: creating || !title.trim() ? '#a0c4f3' : '#0070f3', color: 'white', border: 'none', borderRadius: '6px', cursor: (creating || !title.trim()) ? 'default' : 'pointer', fontWeight: 'bold' }}
+            >
+              {creating ? 'Tworzę…' : 'Dodaj zadanie'}
+            </button>
+          </div>
+        </form>
+      )}
 
       {tasks.length === 0 ? (
         <p style={{ color: '#666' }}>W tym projekcie nie ma jeszcze żadnych zadań.</p>

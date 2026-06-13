@@ -2,7 +2,11 @@ import { apiFetch } from '@/lib/api'
 import type { User, UserStatus } from '@/types/domain'
 
 export const userService = {
-  
+
+  listUsers: async (): Promise<User[]> => {
+    return apiFetch<User[]>('/users')
+  },
+
   getCurrentUser: async (): Promise<User> => {
     const userId = localStorage.getItem('userId')
     if (!userId) throw new Error('Brak zalogowanego użytkownika')

@@ -23,6 +23,7 @@ from app.modules.tasks_and_users.service import (
     get_user,
     list_projects,
     list_tasks,
+    list_users,
     request_close,
     update_profile,
     update_status,
@@ -36,6 +37,11 @@ router = APIRouter(tags=["tasks_and_users"])
 @router.get("/projects", response_model=list[ProjectOut])
 def read_projects(db: Session = Depends(get_db)) -> list[ProjectOut]:
     return list_projects(db)
+
+
+@router.get("/users", response_model=list[UserOut])
+def read_users(db: Session = Depends(get_db)) -> list[UserOut]:
+    return list_users(db)
 
 
 @router.get("/users/{user_id}", response_model=UserOut)

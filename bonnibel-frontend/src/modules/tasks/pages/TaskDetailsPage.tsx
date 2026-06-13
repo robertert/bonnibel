@@ -1,14 +1,48 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { taskService } from '@/services/taskService'
+import { userService } from '@/services/userService'
 import TaskChat from '@/modules/chat/components/TaskChat'
-import type { Task, TaskStatus } from '@/types/domain'
+import type { Task, TaskStatus, User } from '@/types/domain'
 
 export default function TaskDetailsPage() {
   const { projectId, taskId } = useParams<{ projectId: string; taskId: string }>()
   const [task, setTask] = useState<Task | null>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
+  const [users, setUsers] = useState<User[]>([])
+
+  useEffect(() => {
+    userService.listUsers().then(setUsers).catch(console.error)
+  }, [])
+
+  const handleAssign = async (assigneeId: string | null) => {
+    if (!projectId || !taskId) return
+    setUpdating(true)
+    try {
+      const updated = await taskService.assignTask(Number(projectId), Number(taskId), assigneeId)
+      setTask(updated)
+    } catch (err) {
+      console.error('Nie udało się przypisać osoby', err)
+      window.alert('Nie udało się przypisać osoby.')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const handleReviewer = async (reviewerId: string | null) => {
+    if (!projectId || !taskId) return
+    setUpdating(true)
+    try {
+      const updated = await taskService.assignReviewer(Number(projectId), Number(taskId), reviewerId)
+      setTask(updated)
+    } catch (err) {
+      console.error('Nie udało się przypisać recenzenta', err)
+      window.alert('Nie udało się przypisać recenzenta.')
+    } finally {
+      setUpdating(false)
+    }
+  }
 
   useEffect(() => {
     if (projectId && taskId) {
@@ -93,9 +127,31 @@ export default function TaskDetailsPage() {
           </div>
           <div>
             <span style={{ display: 'block', fontSize: '12px', color: '#718096', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px' }}>Przypisana osoba:</span>
-            <span style={{ fontSize: '14px', color: '#2d3748' }}>
-              {task.assigneeId ? `Użytkownik: ${task.assigneeId}` : 'Nieprzypisane'}
-            </span>
+            <select
+              value={task.assigneeId ?? ''}
+              disabled={updating}
+              onChange={(e) => handleAssign(e.target.value || null)}
+              style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '14px', color: '#1a202c', backgroundColor: '#ffffff', cursor: 'pointer' }}
+            >
+              <option value="">— nieprzypisane —</option>
+              {users.map((u) => (
+                <option key={u.userId} value={u.userId}>{u.email}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <span style={{ display: 'block', fontSize: '12px', color: '#718096', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px' }}>Recenzent:</span>
+            <select
+              value={task.reviewerId ?? ''}
+              disabled={updating}
+              onChange={(e) => handleReviewer(e.target.value || null)}
+              style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '14px', color: '#1a202c', backgroundColor: '#ffffff', cursor: 'pointer' }}
+            >
+              <option value="">— brak —</option>
+              {users.map((u) => (
+                <option key={u.userId} value={u.userId}>{u.email}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>

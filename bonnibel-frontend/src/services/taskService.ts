@@ -45,19 +45,15 @@ export const taskService = {
     projectId: number,
     taskData: { title: string; description: string; assigneeId?: string; reviewerId?: string }
   ): Promise<Task> => {
-    const body = {
-      ...taskData,
-      projectId,
-      status: 'TODO' as TaskStatus,
-      gitBranchName: null,
-      jiraIssueKey: `BON-${Math.floor(Math.random() * 800) + 100}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      closedAt: null,
-    }
+    // Backend (CreateTaskRequest) oczekuje tylko tych pól; status/jira/daty ustawia sam.
     return apiFetch<Task>(`/projects/${projectId}/tasks`, {
       method: 'POST',
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        title: taskData.title,
+        description: taskData.description,
+        assigneeId: taskData.assigneeId ?? null,
+        reviewerId: taskData.reviewerId ?? null,
+      }),
     })
   },
 

@@ -62,6 +62,11 @@ def _to_task_out(task: Task) -> TaskOut:
     )
 
 
+def list_users(db: Session) -> list[UserOut]:
+    users = db.scalars(select(User).order_by(User.email.asc())).all()
+    return [_to_user_out(user) for user in users]
+
+
 def get_user(db: Session, user_id: str) -> UserOut:
     user = db.get(User, user_id)
     if user is None:
