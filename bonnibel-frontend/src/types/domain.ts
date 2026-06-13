@@ -23,6 +23,19 @@ export type TaskEventType =
   | 'CHAT_MESSAGE_CREATED'
 
 
+export interface Notification {
+  notificationId: number;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  linkUrl: string | null;
+  isRead: boolean;
+  isDelivered: boolean;
+  createdAt: string;
+}
+
+
 export interface User {
   userId: string;
   email: string;

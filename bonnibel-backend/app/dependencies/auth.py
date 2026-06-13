@@ -1,3 +1,5 @@
+from typing import Annotated
+
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -34,3 +36,11 @@ def get_current_user(
     if user is None:
         raise credentials_exc
     return user
+
+
+def get_current_user_id(user: User = Depends(get_current_user)) -> str:
+    """Zwraca samo user_id zalogowanego użytkownika (dla modułów operujących na id)."""
+    return user.user_id
+
+
+CurrentUserId = Annotated[str, Depends(get_current_user_id)]

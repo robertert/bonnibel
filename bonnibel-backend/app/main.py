@@ -6,6 +6,8 @@ from app.modules.chat.router import router as chat_router
 from app.modules.analytics.router import router as analytics_router
 from app.modules.tasks_and_users.router import router as tasks_and_users_router
 from app.modules.logic.router import router as project_router
+from app.modules.notification.router import router as notification_router
+from app.modules.notification.ws import router as notification_ws_router
 
 # FastAPI app init
 app = FastAPI(
@@ -29,6 +31,9 @@ app.include_router(analytics_router, prefix="/api", tags=["Analytics"])
 app.include_router(tasks_and_users_router, prefix="/api", tags=["Tasks & Users"])
 
 app.include_router(project_router)  # prefix już ustawiony w routerze
+
+app.include_router(notification_router, prefix="/api", tags=["Notifications"])
+app.include_router(notification_ws_router, prefix="/api", tags=["Notifications"])
 
 # (Health Check)
 @app.get("/api/health", tags=["System"])

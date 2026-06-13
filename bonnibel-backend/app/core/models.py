@@ -48,6 +48,10 @@ class NotificationType(str, enum.Enum):
     TASK_ASSIGNED = "TASK_ASSIGNED"
     PR_REVIEW_REQUESTED = "PR_REVIEW_REQUESTED"
     STATUS_CHANGED = "STATUS_CHANGED"
+    TASK_UPDATED = "TASK_UPDATED"
+    PR_CREATED = "PR_CREATED"
+    PR_REVIEWED = "PR_REVIEWED"
+    CHAT_MESSAGE = "CHAT_MESSAGE"
 
 
 # --- Models ---
@@ -152,6 +156,7 @@ class TaskSubscription(Base):
 
     task_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("tasks.task_id"), primary_key=True)
     user_id: Mapped[str] = mapped_column(String, ForeignKey("users.user_id"), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class Docs(Base):
@@ -214,3 +219,17 @@ class Notification(Base):
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     is_delivered: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class TaskRecipientSnapshot(Base):
+    """Minimal task context owned by the notification module to resolve recipients."""
+
+    __tablename__ = "task_recipient_snapshots"
+
+    task_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    project_id: Mapped[Optional[int]] = mapped_column(BigInteger)
+    owner_id: Mapped[Optional[str]] = mapped_column(String)
+    assignee_id: Mapped[Optional[str]] = mapped_column(String)
+    reviewer_id: Mapped[Optional[str]] = mapped_column(String)
+    title: Mapped[Optional[str]] = mapped_column(String)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
