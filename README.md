@@ -17,6 +17,6 @@ Każdy podprojekt ma własne `README.md` z instrukcją i opisem stanu.
 
 Pavel Kapitsa, Margarita Kitaeva, Valadar Harelikau, Sofiia Knyshoyid,
 Jan Jędra, Jarosław Klima, Kacper Gałek, Kinga Kowal, Maciej Jamroży,
-Mikołaj Kołek, Paweł Knot, Robert Jacak, Dawid Węcisz
+Mikołaj Kołek, Paweł Knot, Robert Jacak, Dawid Węcirz
 
 Informatyka i Systemy Inteligentne, WEAIiIB.
