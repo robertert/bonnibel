@@ -8,6 +8,8 @@ pydantic[email]
 pyjwt
 passlib
 bcrypt<4.0.0
+requests
+httpx
 
 # Testy
 pytest
