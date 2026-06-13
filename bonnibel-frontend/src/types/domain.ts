@@ -125,3 +125,16 @@ export interface AnalyticsOverview {
   wipByUser: Record<string, number>;
   throughputByDay: Record<string, number>;
 }
+
+export interface PullRequest {
+  pullRequestId: number;
+  taskId: number;
+  externalId: string;
+  title: string;
+  url: string;
+  reviewerId: string | null;
+  status: 'OPEN' | 'MERGED' | 'CLOSED';
+  createdAt: string;
+  updatedAt: string;
+  mergedAt: string | null;
+}

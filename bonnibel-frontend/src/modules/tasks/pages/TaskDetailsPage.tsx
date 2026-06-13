@@ -3,6 +3,9 @@ import { useParams, Link } from 'react-router-dom'
 import { taskService } from '@/services/taskService'
 import { userService } from '@/services/userService'
 import TaskChat from '@/modules/chat/components/TaskChat'
+import TaskDocs from '@/modules/tasks/components/TaskDocs'
+import TaskPullRequests from '@/modules/tasks/components/TaskPullRequests'
+import TaskHistory from '@/modules/tasks/components/TaskHistory'
 import type { Task, TaskStatus, User } from '@/types/domain'
 
 export default function TaskDetailsPage() {
@@ -64,6 +67,12 @@ export default function TaskDetailsPage() {
       console.error("Nie udało się zaktualizować statusu", err)
     } finally {
       setUpdating(false)
+    }
+  }
+
+  const reloadTask = () => {
+    if (projectId && taskId) {
+      taskService.getTask(Number(projectId), Number(taskId)).then(setTask).catch(console.error)
     }
   }
 
@@ -156,7 +165,10 @@ export default function TaskDetailsPage() {
         </div>
       </div>
 
-      <div style={{ marginTop: '24px' }}>
+      <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <TaskPullRequests projectId={Number(projectId)} taskId={task.taskId} onChanged={reloadTask} />
+        <TaskDocs projectId={Number(projectId)} taskId={task.taskId} />
+        <TaskHistory projectId={Number(projectId)} taskId={task.taskId} />
         <TaskChat projectId={Number(projectId)} taskId={task.taskId} />
       </div>
     </div>

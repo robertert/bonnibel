@@ -1,0 +1,77 @@
+import { useEffect, useState } from 'react'
+import { taskActivityService } from '@/services/taskActivityService'
+import type { TaskDoc } from '@/types/domain'
+
+const card: React.CSSProperties = {
+  background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px',
+  padding: '20px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)',
+}
+const heading: React.CSSProperties = { margin: '0 0 16px 0', fontSize: '18px', color: '#1a202c' }
+const input: React.CSSProperties = {
+  padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e0',
+  fontSize: '14px', color: '#1a202c', background: '#fff',
+}
+const btn: React.CSSProperties = {
+  padding: '8px 14px', borderRadius: '6px', border: 'none', background: '#0070f3',
+  color: '#fff', fontSize: '14px', cursor: 'pointer',
+}
+
+export default function TaskDocs({ projectId, taskId }: { projectId: number; taskId: number }) {
+  const [docs, setDocs] = useState<TaskDoc[]>([])
+  const [loading, setLoading] = useState(true)
+  const [title, setTitle] = useState('')
+  const [url, setUrl] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const load = () => {
+    setLoading(true)
+    taskActivityService.getDocs(projectId, taskId)
+      .then(setDocs)
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(load, [projectId, taskId])
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim()) return
+    setSubmitting(true)
+    try {
+      await taskActivityService.addDoc(projectId, taskId, { title: title.trim(), url: url.trim() || undefined })
+      setTitle('')
+      setUrl('')
+      load()
+    } catch (err) {
+      console.error('Nie udało się dodać dokumentu', err)
+      window.alert('Nie udało się dodać dokumentu (czy jesteś zalogowany?).')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div style={card}>
+      <h2 style={heading}>Dokumentacja</h2>
+      {loading ? (
+        <p style={{ color: '#718096', fontSize: '14px' }}>Wczytywanie…</p>
+      ) : docs.length === 0 ? (
+        <p style={{ color: '#718096', fontSize: '14px' }}>Brak dokumentów.</p>
+      ) : (
+        <ul style={{ listStyle: 'none', margin: '0 0 16px 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {docs.map((d) => (
+            <li key={d.docsId} style={{ fontSize: '14px' }}>
+              <a href={d.url} target="_blank" rel="noreferrer" style={{ color: '#0070f3', textDecoration: 'none' }}>📄 {d.title}</a>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form onSubmit={handleAdd} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <input style={{ ...input, flex: '2 1 160px' }} placeholder="Tytuł dokumentu" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <input style={{ ...input, flex: '3 1 200px' }} placeholder="URL (opcjonalnie)" value={url} onChange={(e) => setUrl(e.target.value)} />
+        <button type="submit" style={{ ...btn, opacity: submitting ? 0.6 : 1 }} disabled={submitting}>Dodaj</button>
+      </form>
+    </div>
+  )
+}
