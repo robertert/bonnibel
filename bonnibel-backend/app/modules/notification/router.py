@@ -10,10 +10,42 @@ from app.modules.notification.schemas import (
     NotificationEventCreate,
     NotificationRead,
     TaskRecipientSnapshotUpsert,
+    TaskSubscriptionRead,
     UnreadCountRead,
 )
 
 router = APIRouter(tags=["notifications"])
+
+
+@router.get("/tasks/subscriptions", response_model=list[TaskSubscriptionRead])
+async def get_subscriptions(
+    current_user_id: CurrentUserId,
+    db: Annotated[Session, Depends(get_db)],
+) -> list[TaskSubscriptionRead]:
+    return notification_service.list_subscriptions(db, current_user_id)
+
+
+@router.post(
+    "/tasks/{task_id}/subscribe",
+    response_model=TaskSubscriptionRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def subscribe_task(
+    task_id: int,
+    current_user_id: CurrentUserId,
+    db: Annotated[Session, Depends(get_db)],
+):
+    return notification_service.subscribe(db, task_id, current_user_id)
+
+
+@router.delete("/tasks/{task_id}/subscribe", status_code=status.HTTP_204_NO_CONTENT)
+async def unsubscribe_task(
+    task_id: int,
+    current_user_id: CurrentUserId,
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    notification_service.unsubscribe(db, task_id, current_user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/notifications", response_model=list[NotificationRead])

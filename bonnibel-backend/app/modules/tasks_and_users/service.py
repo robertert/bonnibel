@@ -6,7 +6,10 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.models import Project, Task, User
+from app.core.models import Project, Task, TaskEventType, User
+from app.modules.integration.gateway import IntegrationGateway
+from app.modules.integration.models import IntegrationProvider
+from app.modules.task_history.service import record_event
 from app.modules.tasks_and_users.schemas import (
     CreateTaskRequest,
     ProjectOut,
@@ -156,6 +159,7 @@ def create_task(db: Session, project_id: int, payload: CreateTaskRequest) -> Tas
     task.jira_issue_key = f"BON-{task.task_id}"
     db.commit()
     db.refresh(task)
+    record_event(db, task, TaskEventType.CREATED, title="Utworzono zadanie", description=task.title)
     return _to_task_out(task)
 
 
@@ -169,6 +173,11 @@ def update_task_status(db: Session, project_id: int, task_id: int, payload: Upda
     task.closed_at = task.updated_at if task.status in {"DONE", "CLOSED"} else None
     db.commit()
     db.refresh(task)
+    _sync_jira_status(db, task)
+    record_event(
+        db, task, TaskEventType.STATUS_CHANGED,
+        title="Zmieniono status", description=f"Nowy status: {task.status}",
+    )
     return _to_task_out(task)
 
 
@@ -181,6 +190,12 @@ def assign_task(db: Session, project_id: int, task_id: int, payload: UpdateTaskA
     task.updated_at = payload.updatedAt or datetime.now(timezone.utc)
     db.commit()
     db.refresh(task)
+    _ensure_git_branch(db, task)
+    record_event(
+        db, task, TaskEventType.UPDATED,
+        title="Przypisano wykonawcę", description=task.assignee_id,
+        actor_id=task.assignee_id,
+    )
     return _to_task_out(task)
 
 
@@ -193,6 +208,11 @@ def assign_reviewer(db: Session, project_id: int, task_id: int, payload: UpdateT
     task.updated_at = payload.updatedAt or datetime.now(timezone.utc)
     db.commit()
     db.refresh(task)
+    record_event(
+        db, task, TaskEventType.UPDATED,
+        title="Przypisano recenzenta", description=task.reviewer_id,
+        actor_id=task.reviewer_id,
+    )
     return _to_task_out(task)
 
 
@@ -205,3 +225,41 @@ def request_close(db: Session, project_id: int, task_id: int) -> None:
     task.updated_at = datetime.now(timezone.utc)
     task.closed_at = task.updated_at
     db.commit()
+    db.refresh(task)
+    record_event(db, task, TaskEventType.STATUS_CHANGED, title="Zadanie zamknięte")
+
+
+def _ensure_git_branch(db: Session, task: Task) -> None:
+    """Best-effort: tworzy gałąź Git dla przypisanego zadania, jeśli jest integracja."""
+    if task.git_branch_name or not task.assignee_id:
+        return
+    gateway = IntegrationGateway(db)
+    if not gateway.has(task.project_id, IntegrationProvider.GITHUB):
+        return
+    try:
+        ref = gateway.git.create_branch(
+            project_id=task.project_id,
+            task_id=task.task_id,
+            jira_ticket_key=task.jira_issue_key or f"BON-{task.task_id}",
+            assignee_name=task.assignee_id,
+        )
+        task.git_branch_name = ref.branch_name
+        db.commit()
+    except Exception:
+        db.rollback()
+
+
+def _sync_jira_status(db: Session, task: Task) -> None:
+    """Best-effort: przenosi ticket w Jira zgodnie ze statusem zadania."""
+    if not task.jira_issue_key:
+        return
+    gateway = IntegrationGateway(db)
+    if not gateway.has(task.project_id, IntegrationProvider.JIRA):
+        return
+    try:
+        if task.status == "IN_PROGRESS":
+            gateway.jira.move_ticket_to_in_progress(task.project_id, task.jira_issue_key)
+        elif task.status in {"DONE", "CLOSED"}:
+            gateway.jira.move_ticket_to_done(task.project_id, task.jira_issue_key)
+    except Exception:
+        pass
