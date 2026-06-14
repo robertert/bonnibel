@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
@@ -20,6 +21,8 @@ from app.modules.notification.manager import notification_service
 from app.modules.notification.schemas import NotificationEventCreate
 from app.modules.pull_requests.schemas import PullRequestCreate
 from app.modules.task_history.service import record_event
+
+logger = logging.getLogger(__name__)
 
 
 def _require_task(db: Session, project_id: int, task_id: int) -> Task:
@@ -52,8 +55,8 @@ async def _notify(db: Session, task: Task, ntype: NotificationType, actor_id: st
     )
     try:
         await notification_service.create_from_event(db, event)
-    except Exception:
-        pass  # powiadomienia best-effort
+    except Exception as exc:
+        logger.warning("Wysłanie powiadomienia PR nie powiodło się dla zadania %s: %r", task.task_id, exc)
 
 
 def list_prs(db: Session, project_id: int, task_id: int) -> list[PullRequest]:
@@ -89,8 +92,8 @@ async def create_pr(db: Session, project_id: int, task_id: int, payload: PullReq
             )
             external_id = ref.pull_request_external_id or external_id
             url = ref.url or url
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("GitHub create_pull_request nie powiódł się dla zadania %s: %r", task_id, exc)
 
     now = datetime.now(timezone.utc)
     pr = PullRequest(
@@ -137,8 +140,8 @@ async def approve_pr(db: Session, pr_id: int, reviewer_id: str) -> PullRequest:
                 gateway.git.merge_pull_request(task.project_id, pr.external_id)
                 if task.git_branch_name:
                     gateway.git.delete_branch(task.project_id, task.git_branch_name)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("GitHub merge/delete_branch nie powiódł się dla PR %s: %r", pr.pull_request_id, exc)
 
     db.commit()
     db.refresh(pr)

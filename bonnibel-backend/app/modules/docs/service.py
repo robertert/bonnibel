@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,6 +11,8 @@ from app.modules.docs.schemas import DocCreate
 from app.modules.integration.gateway import IntegrationGateway
 from app.modules.integration.models import IntegrationProvider
 from app.modules.task_history.service import record_event
+
+logger = logging.getLogger(__name__)
 
 
 def _require_task(db: Session, project_id: int, task_id: int) -> Task:
@@ -44,8 +48,9 @@ def create_doc(db: Session, project_id: int, task_id: int, payload: DocCreate, a
             )
             url = ref.url
             external_id = ref.page_external_id
-        except Exception:
+        except Exception as exc:
             url = None  # integracja niedostępna — zapisujemy lokalnie
+            logger.warning("Confluence create_task_page nie powiódł się dla zadania %s: %r", task_id, exc)
 
     if not url:
         url = f"local://projects/{project_id}/tasks/{task_id}/docs"

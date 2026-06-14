@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
@@ -21,6 +22,8 @@ from app.modules.tasks_and_users.schemas import (
     UpdateTaskStatusRequest,
     UserOut,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _to_user_out(user: User) -> UserOut:
@@ -245,8 +248,9 @@ def _ensure_git_branch(db: Session, task: Task) -> None:
         )
         task.git_branch_name = ref.branch_name
         db.commit()
-    except Exception:
+    except Exception as exc:
         db.rollback()
+        logger.warning("GitHub create_branch nie powiódł się dla zadania %s: %r", task.task_id, exc)
 
 
 def _sync_jira_status(db: Session, task: Task) -> None:
@@ -261,5 +265,5 @@ def _sync_jira_status(db: Session, task: Task) -> None:
             gateway.jira.move_ticket_to_in_progress(task.project_id, task.jira_issue_key)
         elif task.status in {"DONE", "CLOSED"}:
             gateway.jira.move_ticket_to_done(task.project_id, task.jira_issue_key)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Jira sync statusu nie powiódł się dla zadania %s: %r", task.task_id, exc)
