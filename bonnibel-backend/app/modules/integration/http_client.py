@@ -1,6 +1,8 @@
-import requests
+import base64
 import json
 from typing import Dict, Any, Optional
+
+import requests
 
 
 class ExternalResponse:
@@ -18,29 +20,37 @@ class ExternalResponse:
         return self._json
 
 
+def _auth_header(token: str, scheme: str) -> str:
+    """Bearer dla GitHuba; Basic (email:token -> base64) dla Jira/Confluence Cloud."""
+    if scheme == "basic":
+        encoded = base64.b64encode(token.encode("utf-8")).decode("ascii")
+        return f"Basic {encoded}"
+    return f"Bearer {token}"
+
+
 class IntegrationHttpClient:
-    def get(self, url: str, token: str, params: Optional[Dict] = None) -> ExternalResponse:
-        headers = {"Authorization": f"Bearer {token}"}
+    def get(self, url: str, token: str, params: Optional[Dict] = None, auth_scheme: str = "bearer") -> ExternalResponse:
+        headers = {"Authorization": _auth_header(token, auth_scheme)}
         resp = requests.get(url, headers=headers, params=params, timeout=20)
         return ExternalResponse(resp.status_code, resp.text, resp.json() if resp.ok else None)
 
-    def post(self, url: str, token: str, body: Optional[Dict] = None) -> ExternalResponse:
+    def post(self, url: str, token: str, body: Optional[Dict] = None, auth_scheme: str = "bearer") -> ExternalResponse:
         headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
+            "Authorization": _auth_header(token, auth_scheme),
+            "Content-Type": "application/json",
         }
         resp = requests.post(url, headers=headers, json=body, timeout=20)
         return ExternalResponse(resp.status_code, resp.text, resp.json() if resp.ok else None)
 
-    def put(self, url: str, token: str, body: Optional[Dict] = None) -> ExternalResponse:
+    def put(self, url: str, token: str, body: Optional[Dict] = None, auth_scheme: str = "bearer") -> ExternalResponse:
         headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
+            "Authorization": _auth_header(token, auth_scheme),
+            "Content-Type": "application/json",
         }
         resp = requests.put(url, headers=headers, json=body, timeout=20)
         return ExternalResponse(resp.status_code, resp.text, resp.json() if resp.ok else None)
 
-    def delete(self, url: str, token: str) -> ExternalResponse:
-        headers = {"Authorization": f"Bearer {token}"}
+    def delete(self, url: str, token: str, auth_scheme: str = "bearer") -> ExternalResponse:
+        headers = {"Authorization": _auth_header(token, auth_scheme)}
         resp = requests.delete(url, headers=headers, timeout=20)
         return ExternalResponse(resp.status_code, resp.text)

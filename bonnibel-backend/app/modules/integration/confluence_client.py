@@ -27,7 +27,7 @@ class ConfluenceIntegrationClient:
             }
         }
 
-        response = self.http.post(url, integration.access_token, body)
+        response = self.http.post(url, integration.access_token, body, auth_scheme="basic")
 
         if not response.is_success():
             raise ConfluenceIntegrationException(f"Failed to create page: {response.text}")

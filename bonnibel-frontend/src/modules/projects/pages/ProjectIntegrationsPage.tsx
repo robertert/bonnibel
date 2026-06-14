@@ -3,10 +3,10 @@ import { Link, useParams } from 'react-router-dom'
 import { integrationService, type ProjectIntegration } from '@/services/integrationService'
 import type { IntegrationProvider } from '@/types/domain'
 
-const PROVIDERS: { value: IntegrationProvider; label: string; hint: string }[] = [
-  { value: 'GITHUB', label: 'GitHub', hint: 'np. owner/repo' },
-  { value: 'JIRA', label: 'Jira', hint: 'np. https://twojadomena.atlassian.net' },
-  { value: 'CONFLUENCE', label: 'Confluence', hint: 'np. https://twojadomena.atlassian.net/wiki' },
+const PROVIDERS: { value: IntegrationProvider; label: string; hint: string; tokenHint: string }[] = [
+  { value: 'GITHUB', label: 'GitHub', hint: 'np. owner/repo', tokenHint: 'Personal Access Token (Bearer)' },
+  { value: 'JIRA', label: 'Jira', hint: 'np. https://twojadomena.atlassian.net', tokenHint: 'email:api_token (Basic)' },
+  { value: 'CONFLUENCE', label: 'Confluence', hint: 'np. https://twojadomena.atlassian.net/wiki', tokenHint: 'email:api_token (Basic)' },
 ]
 
 export default function ProjectIntegrationsPage() {
@@ -62,7 +62,8 @@ export default function ProjectIntegrationsPage() {
     }
   }
 
-  const currentHint = PROVIDERS.find((p) => p.value === provider)?.hint
+  const currentProvider = PROVIDERS.find((p) => p.value === provider)
+  const currentHint = currentProvider?.hint
 
   return (
     <div className="p-8 max-w-2xl">
@@ -114,6 +115,7 @@ export default function ProjectIntegrationsPage() {
           <label className="block text-sm text-gray-600 mb-1">Token dostępu</label>
           <input type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="••••••••"
                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+          <p className="mt-1 text-xs text-gray-400">Format: {currentProvider?.tokenHint}</p>
         </div>
         <button type="submit" disabled={busy}
                 className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">

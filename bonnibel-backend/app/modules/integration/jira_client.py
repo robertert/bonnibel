@@ -21,7 +21,7 @@ class JiraIntegrationClient:
             }
         }
 
-        response = self.http.post(url, integration.access_token, body)
+        response = self.http.post(url, integration.access_token, body, auth_scheme="basic")
 
         if not response.is_success():
             raise JiraIntegrationException(f"Failed to create Jira ticket: {response.text}")
@@ -48,4 +48,4 @@ class JiraIntegrationClient:
         url = f"{integration.external_id}/rest/api/2/issue/{ticket_key}/transitions"
 
         body = {"transition": {"id": transition_id}}
-        self.http.post(url, integration.access_token, body)
+        self.http.post(url, integration.access_token, body, auth_scheme="basic")
