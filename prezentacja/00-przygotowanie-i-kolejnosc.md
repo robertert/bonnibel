@@ -11,10 +11,15 @@ Pliki modułów: `auth.md`, `projects-members.md`, `integrations.md`, `profile-t
 ### Czysta baza + pełne tło (dane do pokazania nasycenia)
 ```bash
 cd bonnibel-backend
-docker compose down -v && docker compose up -d      # świeży Postgres
+docker compose down -v && docker compose up -d --wait      # świeży Postgres
 ./venv/bin/alembic upgrade head                      # migracje
 ./venv/bin/python scripts/seed_demo.py               # 4 userów + projekt "Bonnibel Core" z danymi
 ```
+> **Ważne:** `--wait` blokuje, aż Postgres zgłosi gotowość (healthcheck w `docker-compose.yml`).
+> Bez tego `alembic` odpala się zanim baza wstanie → błąd „connection ... server closed" / „relation users does not exist".
+> Starszy compose bez `--wait`? Użyj pętli:
+> `until docker exec bonnibel_db pg_isready -U app -d bonnibel_db; do sleep 1; done` przed `alembic`.
+
 Seed daje loginowalnych userów (hasło dla wszystkich: **`password123`**):
 
 | Login | user_id | Rola w "Bonnibel Core" |
@@ -79,5 +84,5 @@ Każdy moduł da się też pokazać samodzielnie — sekcja „Wymagania wstępn
 
 ## 5. Reset w trakcie (gdyby coś poszło nie tak)
 ```bash
-cd bonnibel-backend && docker compose down -v && docker compose up -d && ./venv/bin/alembic upgrade head && ./venv/bin/python scripts/seed_demo.py
+cd bonnibel-backend && docker compose down -v && docker compose up -d --wait && ./venv/bin/alembic upgrade head && ./venv/bin/python scripts/seed_demo.py
 ```
