@@ -111,3 +111,8 @@ class ProjectIntegrationRepository:
             ProjectIntegration.provider == provider
         ).delete()
         self.db.commit()
+
+    def list_by_project(self, project_id: int) -> list[ProjectIntegration]:
+        return self.db.query(ProjectIntegration).filter(
+            ProjectIntegration.project_id == project_id
+        ).all()

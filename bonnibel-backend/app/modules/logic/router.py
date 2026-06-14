@@ -129,6 +129,16 @@ def remove_project_member(
 
 
 # Integrations
+@router.get("/{project_id}/integrations", response_model=List[ProjectIntegrationResponse])
+def list_integrations(
+    project_id: int,
+    current_user: str = Depends(get_current_user_dummy),
+    db: Session = Depends(get_db)
+):
+    service = ProjectService(db)
+    return service.list_integrations(current_user, project_id)
+
+
 @router.post("/{project_id}/integrations", response_model=ProjectIntegrationResponse, status_code=status.HTTP_201_CREATED)
 def connect_integration(
     project_id: int,

@@ -52,6 +52,10 @@ class ProjectService:
         # TODO: dodać sprawdzanie uprawnień
         self.integration_repo.delete(project_id, provider)
 
+    def list_integrations(self, actor_id: str, project_id: int):
+        # TODO: dodać sprawdzanie uprawnień
+        return self.integration_repo.list_by_project(project_id)
+
 
 class MembershipService:
     def __init__(self, db: Session):
