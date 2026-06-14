@@ -1,3 +1,5 @@
+import base64
+import logging
 from datetime import datetime
 from typing import Optional
 
@@ -8,6 +10,8 @@ from .models import (
 from .http_client import IntegrationHttpClient
 from .repository import ProjectIntegrationRepository
 from .exceptions import GitIntegrationException
+
+logger = logging.getLogger(__name__)
 
 
 class GitIntegrationClient:
@@ -33,12 +37,40 @@ class GitIntegrationClient:
         if not response.is_success():
             raise GitIntegrationException(f"Failed to create branch: {response.text}")
 
+        # Dokładamy mały commit na świeżej gałęzi, żeby miała diff względem main
+        # (inaczej GitHub odrzuci PR: "no commits between"). Best-effort.
+        try:
+            self._bootstrap_branch_commit(
+                integration.external_id, branch_name, integration.access_token, jira_ticket_key
+            )
+        except Exception as exc:
+            logger.warning("Commit startowy na gałęzi %s nie powiódł się: %r", branch_name, exc)
+
         return GitBranchRef(
             task_id=task_id,
             branch_name=branch_name,
             external_id=branch_name,
             url=f"https://github.com/{integration.external_id}/tree/{branch_name}"
         )
+
+    def _bootstrap_branch_commit(self, owner_repo: str, branch: str, token: str, jira_ticket_key: str) -> None:
+        """Tworzy mały plik na gałęzi przez GitHub Contents API (commit ponad main)."""
+        path = f".bonnibel/{branch}.md"
+        url = f"https://api.github.com/repos/{owner_repo}/contents/{path}"
+        content = base64.b64encode(
+            f"# {jira_ticket_key}\n\nGałąź robocza utworzona automatycznie przez Bonnibel.\n".encode("utf-8")
+        ).decode("ascii")
+        body = {
+            "message": f"chore: bootstrap branch for {jira_ticket_key}",
+            "content": content,
+            "branch": branch,
+        }
+        resp = self.http.put(url, token, body)
+        if not resp.is_success():
+            raise GitIntegrationException(
+                f"Nie udało się dodać commita startowego na gałęzi '{branch}': "
+                f"HTTP {resp.status_code} {resp.text}"
+            )
 
     def create_pull_request(self, project_id: int, task_id: int, title: str, description: str,
                             source_branch: str, target_branch: str = "main",
