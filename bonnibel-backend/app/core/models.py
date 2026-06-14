@@ -31,6 +31,7 @@ class TaskStatus(str, enum.Enum):
     IN_PROGRESS = "IN_PROGRESS"
     IN_REVIEW = "IN_REVIEW"
     DONE = "DONE"
+    CLOSED = "CLOSED"
 
 class PullRequestStatus(str, enum.Enum):
     OPEN = "OPEN"
