@@ -1,5 +1,5 @@
 import { apiFetch } from '@/lib/api'
-import type { PullRequest, TaskDoc, TaskHistory } from '@/types/domain'
+import type { PullRequest, TaskDoc, TaskHistory, TaskSubscription } from '@/types/domain'
 
 // Docs, Pull Requesty i historia zadania (backend: moduły docs / pull_requests / task_history).
 export const taskActivityService = {
@@ -40,4 +40,14 @@ export const taskActivityService = {
   // --- History ---
   getHistory: (projectId: number, taskId: number): Promise<TaskHistory[]> =>
     apiFetch<TaskHistory[]>(`/projects/${projectId}/tasks/${taskId}/history`),
+
+  // --- Subscriptions ---
+  getSubscriptions: (): Promise<TaskSubscription[]> =>
+    apiFetch<TaskSubscription[]>(`/tasks/subscriptions`),
+
+  subscribe: (taskId: number): Promise<TaskSubscription> =>
+    apiFetch<TaskSubscription>(`/tasks/${taskId}/subscribe`, { method: 'POST' }),
+
+  unsubscribe: (taskId: number): Promise<void> =>
+    apiFetch<void>(`/tasks/${taskId}/subscribe`, { method: 'DELETE' }),
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { taskService } from '@/services/taskService'
+import { taskActivityService } from '@/services/taskActivityService'
 import { userService } from '@/services/userService'
 import TaskChat from '@/modules/chat/components/TaskChat'
 import TaskDocs from '@/modules/tasks/components/TaskDocs'
@@ -14,10 +15,38 @@ export default function TaskDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [users, setUsers] = useState<User[]>([])
+  const [subscribed, setSubscribed] = useState(false)
+  const [subBusy, setSubBusy] = useState(false)
 
   useEffect(() => {
     userService.listUsers().then(setUsers).catch(console.error)
   }, [])
+
+  useEffect(() => {
+    if (!taskId) return
+    taskActivityService.getSubscriptions()
+      .then((subs) => setSubscribed(subs.some((s) => s.taskId === Number(taskId))))
+      .catch(() => setSubscribed(false))
+  }, [taskId])
+
+  const handleToggleSubscribe = async () => {
+    if (!taskId) return
+    setSubBusy(true)
+    try {
+      if (subscribed) {
+        await taskActivityService.unsubscribe(Number(taskId))
+        setSubscribed(false)
+      } else {
+        await taskActivityService.subscribe(Number(taskId))
+        setSubscribed(true)
+      }
+    } catch (err) {
+      console.error('Nie udało się zmienić subskrypcji', err)
+      window.alert('Nie udało się zmienić subskrypcji (czy jesteś zalogowany?).')
+    } finally {
+      setSubBusy(false)
+    }
+  }
 
   const handleAssign = async (assigneeId: string | null) => {
     if (!projectId || !taskId) return
@@ -96,6 +125,18 @@ export default function TaskDetailsPage() {
             {task.jiraIssueKey || 'BON-Task'}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              onClick={handleToggleSubscribe}
+              disabled={subBusy}
+              style={{
+                padding: '6px 12px', borderRadius: '6px', fontSize: '14px', cursor: 'pointer',
+                border: '1px solid ' + (subscribed ? '#0070f3' : '#cbd5e0'),
+                background: subscribed ? '#e1effe' : '#ffffff',
+                color: subscribed ? '#0070f3' : '#4a5568',
+              }}
+            >
+              {subscribed ? '🔔 Obserwujesz' : '🔕 Obserwuj'}
+            </button>
             <span style={{ fontSize: '14px', color: '#4a5568' }}>Status zadania:</span>
             <select
               value={task.status}

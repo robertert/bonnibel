@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { notificationService } from '@/services/notificationService'
+import { notificationService, openNotificationSocket } from '@/services/notificationService'
 import { useNotificationStore } from '@/store/notificationStore'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 import type { Notification, NotificationType } from '@/types/domain'
 
 type Filter = 'all' | 'unread'
@@ -34,12 +35,30 @@ function formatDate(iso: string): string {
 export default function NotificationsPage() {
   const [filter, setFilter] = useState<Filter>('all')
   const queryClient = useQueryClient()
-  const { notifications: liveNotifications, markOneRead, markAllRead, setUnreadCount, decrementUnreadCount } = useNotificationStore()
+  const { notifications: liveNotifications, markOneRead, markAllRead, setUnreadCount, decrementUnreadCount, prependNotification, incrementUnreadCount } = useNotificationStore()
+  const userId = useAuthStore((s) => s.userId)
+  const accessToken = useAuthStore((s) => s.accessToken)
 
   const { data: fetched = [], isLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationService.getNotifications({ limit: 100 }),
   })
+
+  // Powiadomienia na żywo przez WebSocket.
+  useEffect(() => {
+    if (!userId) return
+    const socket = openNotificationSocket(
+      userId,
+      {
+        onNotification: (n) => {
+          prependNotification(n)
+          incrementUnreadCount()
+        },
+      },
+      accessToken,
+    )
+    return () => socket.close()
+  }, [userId, accessToken, prependNotification, incrementUnreadCount])
 
   // Merge realtime-prepended notifications with fetched ones (dedup by id)
   const merged = useMemo(() => {
@@ -141,8 +160,8 @@ export default function NotificationsPage() {
               {n.isRead && <div className="mt-1.5 w-2 h-2 shrink-0" />}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${TYPE_COLORS[n.type]}`}>
-                    {TYPE_LABELS[n.type]}
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${TYPE_COLORS[n.type] ?? 'bg-gray-100 text-gray-600'}`}>
+                    {TYPE_LABELS[n.type] ?? n.type}
                   </span>
                   <span className="text-xs text-gray-400">{formatDate(n.createdAt)}</span>
                 </div>
