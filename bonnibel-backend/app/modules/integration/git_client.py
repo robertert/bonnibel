@@ -87,4 +87,15 @@ class GitIntegrationClient:
     def _get_latest_sha(self, owner_repo: str, branch: str, token: str) -> str:
         url = f"https://api.github.com/repos/{owner_repo}/git/refs/heads/{branch}"
         resp = self.http.get(url, token)
-        return resp.json()["object"]["sha"]
+        if not resp.is_success():
+            raise GitIntegrationException(
+                f"Nie udało się odczytać gałęzi bazowej '{branch}' ({owner_repo}): "
+                f"HTTP {resp.status_code} {resp.text}"
+            )
+        try:
+            return resp.json()["object"]["sha"]
+        except (KeyError, TypeError) as exc:
+            raise GitIntegrationException(
+                f"Nieoczekiwana odpowiedź GitHub przy odczycie gałęzi '{branch}': "
+                f"{str(resp.text)[:200]}"
+            ) from exc
