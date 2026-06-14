@@ -2,7 +2,7 @@ from sqlalchemy import select, delete, update
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from app.core.models import Project, ProjectMember, ProjectIntegration, ProjectRole, IntegrationProvider
+from app.core.models import Project, ProjectMember, ProjectIntegration, ProjectRole, IntegrationProvider, WebhookSecret
 
 
 class ProjectRepository:
@@ -106,10 +106,21 @@ class ProjectIntegrationRepository:
         return integration
 
     def delete(self, project_id: int, provider: IntegrationProvider) -> None:
+        # Najpierw usuń zależne webhook_secrets (FK), potem samą integrację.
+        integration_ids = [
+            i.integration_id for i in self.db.query(ProjectIntegration).filter(
+                ProjectIntegration.project_id == project_id,
+                ProjectIntegration.provider == provider
+            ).all()
+        ]
+        if integration_ids:
+            self.db.query(WebhookSecret).filter(
+                WebhookSecret.integration_id.in_(integration_ids)
+            ).delete(synchronize_session=False)
         self.db.query(ProjectIntegration).filter(
             ProjectIntegration.project_id == project_id,
             ProjectIntegration.provider == provider
-        ).delete()
+        ).delete(synchronize_session=False)
         self.db.commit()
 
     def list_by_project(self, project_id: int) -> list[ProjectIntegration]:
