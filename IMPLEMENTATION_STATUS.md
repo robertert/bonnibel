@@ -43,10 +43,12 @@ Legenda: ✅ działa · ◐ częściowo · ✗ brak
 | **Hook Auth + webhooki** | ✅ | `app/modules/hook_auth/` — `SignatureVerifier`(Git/Jira HMAC) + `Factory` + `SecretRepository` + `HookAuthService`; `POST /api/hooks/{provider}/{project_id}` weryfikuje podpis i przetwarza zdarzenie |
 | **Online presence** | ✅ | `User.is_online` aktualizowane przy connect/disconnect WS powiadomień |
 
+## Frontend
+- Widoki projektów (lista + szczegóły), panele **Docs / PR / Historia** na stronie zadania, przycisk **subskrypcji** zadania, strona **Reviews** (zadania do recenzji) oraz **powiadomienia na żywo** przez WebSocket — zaimplementowane.
+- Akcje wymagające auth (docs/PR/subskrypcja) działają po zalogowaniu (Bearer); w trybie `VITE_BYPASS_AUTH` bez tokenu zwrócą 401 (odczyt list działa).
+
 ## Znane ograniczenia / poza zakresem
 - **Integracje zewnętrzne** wołane są best-effort — realne operacje na GitHub/Jira/Confluence wymagają prawdziwych tokenów; z danymi demo (token testowy) wywołania są pomijane, a rekordy powstają lokalnie.
-- **Frontend** dla nowych endpointów (docs, PR, historia, subskrypcje) nie był budowany — testowanie przez Swagger `/api/docs` lub `curl`. Istniejące widoki (projekty, zadania, czat, powiadomienia, analityka) działają jak wcześniej.
-- **`request_close`/CLOSED**: kod ustawia status `"CLOSED"`, którego nie ma w enumie DB `taskstatus` (TODO/IN_PROGRESS/IN_REVIEW/DONE) — istniejący, wcześniejszy potencjalny błąd; nie ruszany w tym etapie.
 - `app/modules/integration/tests/test_git_client.py::test_create_branch_failure` — wcześniej istniejący defekt testu (źle skonfigurowany `Mock`), nie związany ze scaleniem.
 
 ## Dane testowe
