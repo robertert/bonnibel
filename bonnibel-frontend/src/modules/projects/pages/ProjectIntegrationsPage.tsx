@@ -62,6 +62,13 @@ export default function ProjectIntegrationsPage() {
     }
   }
 
+  // Funkcja pomocnicza do kopiowania danych do schowka
+  const copyToClipboard = (text: string, message: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => window.alert(message))
+      .catch((err) => console.error('Nie udało się skopiować', err))
+  }
+
   const currentProvider = PROVIDERS.find((p) => p.value === provider)
   const currentHint = currentProvider?.hint
 
@@ -79,17 +86,63 @@ export default function ProjectIntegrationsPage() {
         ) : integrations.length === 0 ? (
           <p className="text-gray-500 text-sm">Brak podłączonych integracji.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-4">
             {integrations.map((i) => (
-              <li key={i.integration_id} className="flex items-center justify-between gap-3 border-b border-gray-100 pb-2 last:border-0">
-                <div>
-                  <span className="font-medium text-gray-900">{i.provider}</span>
-                  <span className="ml-2 text-sm text-gray-500">{i.external_id}</span>
-                  <span className={`ml-2 text-[11px] font-semibold px-2 py-0.5 rounded-full ${i.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {i.is_active ? 'aktywna' : 'nieaktywna'}
-                  </span>
+              <li key={i.integration_id} className="block border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <span className="font-medium text-gray-900">{i.provider}</span>
+                    <span className="ml-2 text-sm text-gray-500">{i.external_id}</span>
+                    <span className={`ml-2 text-[11px] font-semibold px-2 py-0.5 rounded-full ${i.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {i.is_active ? 'aktywna' : 'nieaktywna'}
+                    </span>
+                  </div>
+                  <button onClick={() => handleDisconnect(i.provider)} className="text-sm text-red-600 hover:text-red-800 font-medium">Odłącz</button>
                 </div>
-                <button onClick={() => handleDisconnect(i.provider)} className="text-sm text-red-600 hover:text-red-800">Odłącz</button>
+
+                {/* Sekcja Webhook Info: Pokazuje się tylko dla aktywnych integracji GitHub / Jira */}
+                {i.is_active && (i.provider === 'GITHUB' || i.provider === 'JIRA') && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100 space-y-2.5 text-xs">
+                    <div>
+                      <label className="block font-medium text-gray-700 mb-1">Webhook Payload URL (wklej w GitHub/Jira):</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          readOnly 
+                          value={i.webhook_url || 'Generowanie URL przez serwer...'} 
+                          className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-gray-600 select-all font-mono" 
+                        />
+                        <button 
+                          type="button" 
+                          disabled={!i.webhook_url}
+                          onClick={() => copyToClipboard(i.webhook_url || '', 'Skopiowano Webhook URL do schowka!')} 
+                          className="bg-white border border-gray-200 px-2 py-1 rounded hover:bg-gray-100 font-medium text-gray-700 active:scale-95 transition"
+                        >
+                          Kopiuj
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block font-medium text-gray-700 mb-1">Webhook Secret Key (do podpisu HMAC):</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          readOnly 
+                          value={i.webhook_secret || 'Generowanie klucza przez serwer...'} 
+                          className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-gray-600 select-all font-mono" 
+                        />
+                        <button 
+                          type="button" 
+                          disabled={!i.webhook_secret}
+                          onClick={() => copyToClipboard(i.webhook_secret || '', 'Skopiowano Secret Key do schowka!')} 
+                          className="bg-white border border-gray-200 px-2 py-1 rounded hover:bg-gray-100 font-medium text-gray-700 active:scale-95 transition"
+                        >
+                          Kopiuj
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
