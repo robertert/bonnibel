@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { integrationService, type ProjectIntegration } from '@/services/integrationService'
+import { projectService } from '@/services/projectService'
 import type { IntegrationProvider } from '@/types/domain'
 
 const PROVIDERS: { value: IntegrationProvider; label: string; hint: string; tokenHint: string }[] = [
@@ -13,6 +14,11 @@ export default function ProjectIntegrationsPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const pid = Number(projectId)
 
+  // System ról i autoryzacji (RBAC)
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  // Stany integracji
   const [integrations, setIntegrations] = useState<ProjectIntegration[]>([])
   const [loading, setLoading] = useState(true)
   const [provider, setProvider] = useState<IntegrationProvider>('GITHUB')
@@ -20,7 +26,27 @@ export default function ProjectIntegrationsPage() {
   const [accessToken, setAccessToken] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const load = () => {
+  // 1. Sprawdzanie uprawnień użytkownika
+  useEffect(() => {
+    const currentUserId = localStorage.getItem('userId')
+    if (!currentUserId) {
+      setHasAccess(false)
+      setAuthLoading(false)
+      return
+    }
+
+    projectService.listMembers(pid)
+      .then((members) => {
+        const me = members.find(m => m.userId === currentUserId)
+        // Tylko OWNER ma prawo zarządzać integracjami projektu
+        setHasAccess(me?.role === 'OWNER')
+      })
+      .catch(() => setHasAccess(false))
+      .finally(() => setAuthLoading(false))
+  }, [pid])
+
+  // 2. Ładowanie integracji (uruchamiane tylko gdy użytkownik pomyślnie przejdzie autoryzację)
+  const loadIntegrations = () => {
     setLoading(true)
     integrationService.list(pid)
       .then(setIntegrations)
@@ -28,7 +54,11 @@ export default function ProjectIntegrationsPage() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(load, [pid])
+  useEffect(() => {
+    if (hasAccess) {
+      loadIntegrations()
+    }
+  }, [hasAccess, pid])
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,7 +72,7 @@ export default function ProjectIntegrationsPage() {
       })
       setExternalId('')
       setAccessToken('')
-      load()
+      loadIntegrations()
     } catch (err) {
       console.error('Nie udało się podłączyć integracji', err)
       window.alert('Nie udało się podłączyć integracji.')
@@ -55,20 +85,39 @@ export default function ProjectIntegrationsPage() {
     if (!window.confirm(`Odłączyć integrację ${p}?`)) return
     try {
       await integrationService.disconnect(pid, p)
-      load()
+      loadIntegrations()
     } catch (err) {
       console.error('Nie udało się odłączyć integracji', err)
       window.alert('Nie udało się odłączyć integracji.')
     }
   }
 
-  // Funkcja pomocnicza do kopiowania danych do schowka
   const copyToClipboard = (text: string, message: string) => {
     navigator.clipboard.writeText(text)
       .then(() => window.alert(message))
       .catch((err) => console.error('Nie udało się skopiować', err))
   }
 
+  // WIDOKI KONTROLNE (Autoryzacja)
+  if (authLoading) {
+    return <div className="p-8 text-gray-500 text-center">Weryfikacja uprawnień…</div>
+  }
+
+  if (hasAccess === false) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto">
+        <Link to={`/projects/${projectId}`} className="text-sm text-blue-600 hover:text-blue-800">← Powrót do projektu</Link>
+        <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6 text-center shadow-sm">
+          <h2 className="text-lg font-semibold text-red-800 mb-2">Brak uprawnień</h2>
+          <p className="text-sm text-red-600">
+            Tylko <strong>Właściciel (OWNER)</strong> projektu może przeglądać i zarządżać integracjami tego projektu.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // GŁÓWNY WIDOK DLA UPRAWNIONEGO UŻYTKOWNIKA (OWNER)
   const currentProvider = PROVIDERS.find((p) => p.value === provider)
   const currentHint = currentProvider?.hint
 
@@ -78,7 +127,7 @@ export default function ProjectIntegrationsPage() {
       <h1 className="mt-3 text-2xl font-semibold text-gray-900">Integracje projektu</h1>
       <p className="text-sm text-gray-500 mt-1 mb-6">Token dotyczy tego projektu i jest ustawiany przez właściciela.</p>
 
-      {/* Podłączone */}
+      {/* Podłączone integracje */}
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm mb-6">
         <h2 className="text-lg font-semibold mb-3">Podłączone</h2>
         {loading ? (
@@ -100,45 +149,20 @@ export default function ProjectIntegrationsPage() {
                   <button onClick={() => handleDisconnect(i.provider)} className="text-sm text-red-600 hover:text-red-800 font-medium">Odłącz</button>
                 </div>
 
-                {/* Sekcja Webhook Info: Pokazuje się tylko dla aktywnych integracji GitHub / Jira */}
                 {i.is_active && (i.provider === 'GITHUB' || i.provider === 'JIRA') && (
                   <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100 space-y-2.5 text-xs">
                     <div>
-                      <label className="block font-medium text-gray-700 mb-1">Webhook Payload URL (wklej w GitHub/Jira):</label>
+                      <label className="block font-medium text-gray-700 mb-1">Webhook Payload URL:</label>
                       <div className="flex gap-2">
-                        <input 
-                          type="text" 
-                          readOnly 
-                          value={i.webhook_url || 'Generowanie URL przez serwer...'} 
-                          className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-gray-600 select-all font-mono" 
-                        />
-                        <button 
-                          type="button" 
-                          disabled={!i.webhook_url}
-                          onClick={() => copyToClipboard(i.webhook_url || '', 'Skopiowano Webhook URL do schowka!')} 
-                          className="bg-white border border-gray-200 px-2 py-1 rounded hover:bg-gray-100 font-medium text-gray-700 active:scale-95 transition"
-                        >
-                          Kopiuj
-                        </button>
+                        <input type="text" readOnly value={i.webhook_url || 'Generowanie URL przez serwer...'} className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-gray-600 select-all font-mono" />
+                        <button type="button" disabled={!i.webhook_url} onClick={() => copyToClipboard(i.webhook_url || '', 'Skopiowano Webhook URL!')} className="bg-white border border-gray-200 px-2 py-1 rounded hover:bg-gray-100 font-medium text-gray-700 active:scale-95 transition">Kopiuj</button>
                       </div>
                     </div>
                     <div>
-                      <label className="block font-medium text-gray-700 mb-1">Webhook Secret Key (do podpisu HMAC):</label>
+                      <label className="block font-medium text-gray-700 mb-1">Webhook Secret Key (HMAC):</label>
                       <div className="flex gap-2">
-                        <input 
-                          type="text" 
-                          readOnly 
-                          value={i.webhook_secret || 'Generowanie klucza przez serwer...'} 
-                          className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-gray-600 select-all font-mono" 
-                        />
-                        <button 
-                          type="button" 
-                          disabled={!i.webhook_secret}
-                          onClick={() => copyToClipboard(i.webhook_secret || '', 'Skopiowano Secret Key do schowka!')} 
-                          className="bg-white border border-gray-200 px-2 py-1 rounded hover:bg-gray-100 font-medium text-gray-700 active:scale-95 transition"
-                        >
-                          Kopiuj
-                        </button>
+                        <input type="text" readOnly value={i.webhook_secret || 'Generowanie klucza przez serwer...'} className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-gray-600 select-all font-mono" />
+                        <button type="button" disabled={!i.webhook_secret} onClick={() => copyToClipboard(i.webhook_secret || '', 'Skopiowano Secret Key!')} className="bg-white border border-gray-200 px-2 py-1 rounded hover:bg-gray-100 font-medium text-gray-700 active:scale-95 transition">Kopiuj</button>
                       </div>
                     </div>
                   </div>
@@ -154,24 +178,20 @@ export default function ProjectIntegrationsPage() {
         <h2 className="text-lg font-semibold">Podłącz integrację</h2>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Dostawca</label>
-          <select value={provider} onChange={(e) => setProvider(e.target.value as IntegrationProvider)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          <select value={provider} onChange={(e) => setProvider(e.target.value as IntegrationProvider)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Identyfikator zewnętrzny</label>
-          <input value={externalId} onChange={(e) => setExternalId(e.target.value)} placeholder={currentHint}
-                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+          <input value={externalId} onChange={(e) => setExternalId(e.target.value)} placeholder={currentHint} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
         </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Token dostępu</label>
-          <input type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="••••••••"
-                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+          <input type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="••••••••" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
           <p className="mt-1 text-xs text-gray-400">Format: {currentProvider?.tokenHint}</p>
         </div>
-        <button type="submit" disabled={busy}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">
+        <button type="submit" disabled={busy} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">
           {busy ? 'Łączenie…' : 'Podłącz'}
         </button>
       </form>
