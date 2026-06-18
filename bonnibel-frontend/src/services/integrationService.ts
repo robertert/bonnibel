@@ -8,8 +8,6 @@ export interface ProjectIntegration {
   provider: IntegrationProvider
   external_id: string
   is_active: boolean
-  webhook_url?: string    
-  webhook_secret?: string
 }
 
 export const integrationService = {

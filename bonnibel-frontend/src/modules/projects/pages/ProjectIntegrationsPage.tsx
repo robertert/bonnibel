@@ -14,7 +14,7 @@ export default function ProjectIntegrationsPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const pid = Number(projectId)
 
-  // System ról i autoryzacji (RBAC)
+  // System ról i autoryzacji (RBAC) - zostaje bez zmian
   const [hasAccess, setHasAccess] = useState<boolean | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
 
@@ -26,7 +26,7 @@ export default function ProjectIntegrationsPage() {
   const [accessToken, setAccessToken] = useState('')
   const [busy, setBusy] = useState(false)
 
-  // 1. Sprawdzanie uprawnień użytkownika
+  // 1. Sprawdzanie uprawnień użytkownika (Tylko OWNER przejdzie dalej)
   useEffect(() => {
     const currentUserId = localStorage.getItem('userId')
     if (!currentUserId) {
@@ -38,14 +38,13 @@ export default function ProjectIntegrationsPage() {
     projectService.listMembers(pid)
       .then((members) => {
         const me = members.find(m => m.userId === currentUserId)
-        // Tylko OWNER ma prawo zarządzać integracjami projektu
         setHasAccess(me?.role === 'OWNER')
       })
       .catch(() => setHasAccess(false))
       .finally(() => setAuthLoading(false))
   }, [pid])
 
-  // 2. Ładowanie integracji (uruchamiane tylko gdy użytkownik pomyślnie przejdzie autoryzację)
+  // 2. Ładowanie integracji
   const loadIntegrations = () => {
     setLoading(true)
     integrationService.list(pid)
@@ -92,13 +91,7 @@ export default function ProjectIntegrationsPage() {
     }
   }
 
-  const copyToClipboard = (text: string, message: string) => {
-    navigator.clipboard.writeText(text)
-      .then(() => window.alert(message))
-      .catch((err) => console.error('Nie udało się skopiować', err))
-  }
-
-  // WIDOKI KONTROLNE (Autoryzacja)
+  // WIDOKI KONTROLNE (Autoryzacja RBAC)
   if (authLoading) {
     return <div className="p-8 text-gray-500 text-center">Weryfikacja uprawnień…</div>
   }
@@ -125,7 +118,7 @@ export default function ProjectIntegrationsPage() {
     <div className="p-8 max-w-2xl">
       <Link to={`/projects/${projectId}`} className="text-sm text-gray-500 hover:text-gray-700">← Powrót do projektu</Link>
       <h1 className="mt-3 text-2xl font-semibold text-gray-900">Integracje projektu</h1>
-      <p className="text-sm text-gray-500 mt-1 mb-6">Token dotyczy tego projektu i jest ustawiany przez właściciela.</p>
+      <p className="text-sm text-gray-500 mt-1 mb-6">Token dostępu dotyczy tego projektu i jest ustawiany przez właściciela.</p>
 
       {/* Podłączone integracje */}
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm mb-6">
@@ -148,25 +141,6 @@ export default function ProjectIntegrationsPage() {
                   </div>
                   <button onClick={() => handleDisconnect(i.provider)} className="text-sm text-red-600 hover:text-red-800 font-medium">Odłącz</button>
                 </div>
-
-                {i.is_active && (i.provider === 'GITHUB' || i.provider === 'JIRA') && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100 space-y-2.5 text-xs">
-                    <div>
-                      <label className="block font-medium text-gray-700 mb-1">Webhook Payload URL:</label>
-                      <div className="flex gap-2">
-                        <input type="text" readOnly value={i.webhook_url || 'Generowanie URL przez serwer...'} className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-gray-600 select-all font-mono" />
-                        <button type="button" disabled={!i.webhook_url} onClick={() => copyToClipboard(i.webhook_url || '', 'Skopiowano Webhook URL!')} className="bg-white border border-gray-200 px-2 py-1 rounded hover:bg-gray-100 font-medium text-gray-700 active:scale-95 transition">Kopiuj</button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block font-medium text-gray-700 mb-1">Webhook Secret Key (HMAC):</label>
-                      <div className="flex gap-2">
-                        <input type="text" readOnly value={i.webhook_secret || 'Generowanie klucza przez serwer...'} className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-gray-600 select-all font-mono" />
-                        <button type="button" disabled={!i.webhook_secret} onClick={() => copyToClipboard(i.webhook_secret || '', 'Skopiowano Secret Key!')} className="bg-white border border-gray-200 px-2 py-1 rounded hover:bg-gray-100 font-medium text-gray-700 active:scale-95 transition">Kopiuj</button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </li>
             ))}
           </ul>
