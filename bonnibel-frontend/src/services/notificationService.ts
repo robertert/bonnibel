@@ -48,7 +48,7 @@ export function openNotificationSocket(
   token?: string | null
 ): WebSocket {
   const wsBase = API_BASE_URL.replace(/^http/, 'ws')
-  const url = new URL(`${wsBase}/ws/notifications`)
+  const url = new URL(`${wsBase}/api/ws/notifications`)
   if (token) {
     url.searchParams.set('token', token)
   } else {

@@ -7,9 +7,11 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.models import Project, Task, TaskEventType, User
+from app.core.models import NotificationType, Project, Task, TaskEventType, User
 from app.modules.integration.gateway import IntegrationGateway
 from app.modules.integration.models import IntegrationProvider
+from app.modules.notification.manager import notification_service
+from app.modules.notification.schemas import NotificationEventCreate
 from app.modules.task_history.service import record_event
 from app.modules.tasks_and_users.schemas import (
     CreateTaskRequest,
@@ -24,6 +26,34 @@ from app.modules.tasks_and_users.schemas import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+async def _notify_task(
+    db: Session,
+    task: Task,
+    ntype: NotificationType,
+    actor_id: str | None,
+    title: str,
+    message: str,
+) -> None:
+    """Best-effort: wyślij powiadomienie o zdarzeniu na zadaniu (owner/assignee/reviewer/subskrybenci)."""
+    project = db.get(Project, task.project_id)
+    event = NotificationEventCreate(
+        type=ntype,
+        task_id=task.task_id,
+        project_id=task.project_id,
+        actor_id=actor_id,
+        owner_id=project.owner_id if project else None,
+        assignee_id=task.assignee_id,
+        reviewer_id=task.reviewer_id,
+        title=title,
+        message=message,
+        link_url=f"/projects/{task.project_id}/tasks/{task.task_id}",
+    )
+    try:
+        await notification_service.create_from_event(db, event)
+    except Exception as exc:
+        logger.warning("Wysłanie powiadomienia dla zadania %s nie powiodło się: %r", task.task_id, exc)
 
 
 def _to_user_out(user: User) -> UserOut:
@@ -138,7 +168,7 @@ def get_task(db: Session, project_id: int, task_id: int) -> TaskOut:
     return _to_task_out(task)
 
 
-def create_task(db: Session, project_id: int, payload: CreateTaskRequest) -> TaskOut:
+async def create_task(db: Session, project_id: int, payload: CreateTaskRequest, actor_id: str | None = None) -> TaskOut:
     if db.get(Project, project_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nie znaleziono projektu")
 
@@ -163,10 +193,15 @@ def create_task(db: Session, project_id: int, payload: CreateTaskRequest) -> Tas
     db.commit()
     db.refresh(task)
     record_event(db, task, TaskEventType.CREATED, title="Utworzono zadanie", description=task.title)
+    if task.assignee_id or task.reviewer_id:
+        await _notify_task(
+            db, task, NotificationType.TASK_ASSIGNED, actor_id,
+            "Przypisano zadanie", f"Przypisano Cię do zadania #{task.task_id}: {task.title}",
+        )
     return _to_task_out(task)
 
 
-def update_task_status(db: Session, project_id: int, task_id: int, payload: UpdateTaskStatusRequest) -> TaskOut:
+async def update_task_status(db: Session, project_id: int, task_id: int, payload: UpdateTaskStatusRequest, actor_id: str | None = None) -> TaskOut:
     task = db.get(Task, task_id)
     if task is None or task.project_id != project_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nie znaleziono zadania")
@@ -181,10 +216,14 @@ def update_task_status(db: Session, project_id: int, task_id: int, payload: Upda
         db, task, TaskEventType.STATUS_CHANGED,
         title="Zmieniono status", description=f"Nowy status: {task.status}",
     )
+    await _notify_task(
+        db, task, NotificationType.TASK_UPDATED, actor_id,
+        "Zaktualizowano zadanie", f"Zadanie #{task.task_id} zmieniło status na {task.status}",
+    )
     return _to_task_out(task)
 
 
-def assign_task(db: Session, project_id: int, task_id: int, payload: UpdateTaskAssigneeRequest) -> TaskOut:
+async def assign_task(db: Session, project_id: int, task_id: int, payload: UpdateTaskAssigneeRequest, actor_id: str | None = None) -> TaskOut:
     task = db.get(Task, task_id)
     if task is None or task.project_id != project_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nie znaleziono zadania")
@@ -199,10 +238,14 @@ def assign_task(db: Session, project_id: int, task_id: int, payload: UpdateTaskA
         title="Przypisano wykonawcę", description=task.assignee_id,
         actor_id=task.assignee_id,
     )
+    await _notify_task(
+        db, task, NotificationType.TASK_ASSIGNED, actor_id,
+        "Przypisano zadanie", f"Przypisano Cię do zadania #{task.task_id}: {task.title}",
+    )
     return _to_task_out(task)
 
 
-def assign_reviewer(db: Session, project_id: int, task_id: int, payload: UpdateTaskReviewerRequest) -> TaskOut:
+async def assign_reviewer(db: Session, project_id: int, task_id: int, payload: UpdateTaskReviewerRequest, actor_id: str | None = None) -> TaskOut:
     task = db.get(Task, task_id)
     if task is None or task.project_id != project_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nie znaleziono zadania")
@@ -215,6 +258,10 @@ def assign_reviewer(db: Session, project_id: int, task_id: int, payload: UpdateT
         db, task, TaskEventType.UPDATED,
         title="Przypisano recenzenta", description=task.reviewer_id,
         actor_id=task.reviewer_id,
+    )
+    await _notify_task(
+        db, task, NotificationType.TASK_ASSIGNED, actor_id,
+        "Przypisano jako recenzenta", f"Jesteś recenzentem zadania #{task.task_id}: {task.title}",
     )
     return _to_task_out(task)
 
