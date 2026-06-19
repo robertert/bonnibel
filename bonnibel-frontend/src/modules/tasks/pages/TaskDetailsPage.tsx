@@ -9,6 +9,15 @@ import TaskChat from '@/modules/chat/components/TaskChat'
 import TaskHistory from '@/modules/tasks/components/TaskHistory'
 import type { PullRequest, Task, TaskDoc, TaskStatus, User } from '@/types/domain'
 
+function isValidHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 export default function TaskDetailsPage() {
   const { projectId, taskId } = useParams<{ projectId: string; taskId: string }>()
   const [task, setTask] = useState<Task | null>(null)
@@ -25,6 +34,9 @@ export default function TaskDetailsPage() {
   const [docsEditing, setDocsEditing] = useState(false)
   const [prCreating, setPrCreating] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const trimmedDocsUrl = docsUrl.trim()
+  const docsUrlInvalid = trimmedDocsUrl.length > 0 && !isValidHttpUrl(trimmedDocsUrl)
+  const docsFormInvalid = !docsTitle.trim() || !trimmedDocsUrl || docsUrlInvalid
 
   useEffect(() => {
     userService.listUsers().then(setUsers).catch(console.error)
@@ -120,14 +132,14 @@ export default function TaskDetailsPage() {
 
   const handleAddDocs = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!projectId || !taskId || !docsTitle.trim() || !docsUrl.trim()) return
+    if (!projectId || !taskId || docsFormInvalid) return
 
     setDocsSaving(true)
     setMessage(null)
     try {
       const createdDocs = await docsService.addTaskDocs(Number(projectId), Number(taskId), {
         title: docsTitle.trim(),
-        url: docsUrl.trim(),
+        url: trimmedDocsUrl,
       })
       setDocs(createdDocs)
       setDocsTitle('')
@@ -157,14 +169,14 @@ export default function TaskDetailsPage() {
 
   const handleUpdateDocs = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!projectId || !taskId || !docs || !docsTitle.trim() || !docsUrl.trim()) return
+    if (!projectId || !taskId || !docs || docsFormInvalid) return
 
     setDocsSaving(true)
     setMessage(null)
     try {
       const updatedDocs = await docsService.updateTaskDocs(Number(projectId), Number(taskId), docs.docsId, {
         title: docsTitle.trim(),
-        url: docsUrl.trim(),
+        url: trimmedDocsUrl,
       })
       setDocs(updatedDocs)
       setDocsEditing(false)
@@ -385,24 +397,30 @@ export default function TaskDetailsPage() {
               <label style={{ display: 'grid', gap: '6px', fontSize: '13px', color: '#4a5568', fontWeight: 'bold' }}>
                 URL
                 <input
+                  type="url"
                   value={docsUrl}
                   onChange={(e) => setDocsUrl(e.target.value)}
                   placeholder="https://..."
-                  style={{ padding: '9px 10px', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '14px', color: '#1a202c' }}
+                  style={{ padding: '9px 10px', borderRadius: '6px', border: docsUrlInvalid ? '1px solid #e53e3e' : '1px solid #cbd5e0', fontSize: '14px', color: '#1a202c' }}
                 />
+                {docsUrlInvalid && (
+                  <span style={{ fontSize: '12px', color: '#e53e3e', fontWeight: 'normal' }}>
+                    Podaj poprawny adres zaczynajacy sie od http:// lub https://.
+                  </span>
+                )}
               </label>
             </div>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               <button
                 type="submit"
-                disabled={docsSaving || !docsTitle.trim() || !docsUrl.trim()}
+                disabled={docsSaving || docsFormInvalid}
                 style={{
                   padding: '8px 14px',
                   borderRadius: '6px',
                   border: 'none',
-                  background: '#2f855a',
+                  background: docsFormInvalid ? '#cbd5e0' : '#2f855a',
                   color: 'white',
-                  cursor: docsSaving ? 'wait' : 'pointer',
+                  cursor: docsSaving ? 'wait' : docsFormInvalid ? 'not-allowed' : 'pointer',
                   fontWeight: 'bold',
                   fontSize: '14px',
                 }}
