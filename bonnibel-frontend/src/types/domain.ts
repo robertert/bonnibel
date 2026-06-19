@@ -4,7 +4,7 @@
 export type ProjectRole = 'OWNER' | 'DEVELOPER' | 'REVIEWER'
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BANNED'
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'CLOSED'
-export type PullRequestStatus = 'OPEN' | 'APPROVED' | 'REJECTED' | 'MERGED' | 'CLOSED'
+export type PullRequestStatus = 'OPEN' | 'MERGED' | 'CLOSED'
 export type IntegrationProvider = 'GITHUB' | 'JIRA' | 'CONFLUENCE'
 export type NotificationType =
   | 'TASK_ASSIGNED'

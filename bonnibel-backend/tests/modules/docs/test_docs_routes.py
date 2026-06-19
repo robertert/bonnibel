@@ -17,7 +17,7 @@ def test_create_docs_for_existing_task(db_session, seeded_task):
     assert docs.task_id == seeded_task.task_id
     assert docs.title == "Task docs"
     assert docs.url == "https://docs.example/task-1"
-    assert docs.external_id == "mock-docs-1-1"
+    assert docs.external_id == "external-docs-url-1-1"
 
 
 def test_duplicate_docs_returns_conflict(db_session, seeded_task):
@@ -47,7 +47,7 @@ def test_get_project_docs(db_session, seeded_task):
     docs = service.get_project_docs(MOCK_ACTOR_ID, 1)
 
     assert len(docs) == 1
-    assert docs[0].external_id == "mock-docs-1-1"
+    assert docs[0].external_id == "external-docs-url-1-1"
 
 
 def test_missing_task_returns_not_found(db_session):

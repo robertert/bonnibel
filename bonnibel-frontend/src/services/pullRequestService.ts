@@ -129,8 +129,9 @@ export const pullRequestService = {
       return apiFetch<PullRequest>(`/pullRequests/${pullRequestId}`, {
         method: 'PATCH',
         body: JSON.stringify({
-          status: 'APPROVED',
+          status: 'MERGED',
           updatedAt: new Date().toISOString(),
+          mergedAt: new Date().toISOString(),
         }),
       })
     }
@@ -145,7 +146,7 @@ export const pullRequestService = {
       return apiFetch<PullRequest>(`/pullRequests/${pullRequestId}`, {
         method: 'PATCH',
         body: JSON.stringify({
-          status: 'REJECTED',
+          status: 'CLOSED',
           rejectionReason: reason,
           updatedAt: new Date().toISOString(),
         }),

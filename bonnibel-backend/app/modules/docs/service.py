@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -14,40 +12,6 @@ def api_error(status_code: int, error_code: str, message: str) -> HTTPException:
         status_code=status_code,
         detail={"errorCode": error_code, "message": message},
     )
-
-
-@dataclass(frozen=True)
-class DocsPageRef:
-    task_id: int
-    page_external_id: str
-    title: str
-    url: str
-
-
-class MockDocsIntegrationClient:
-    def create_task_page(
-        self,
-        project_id: int,
-        task_id: int,
-        task_title: str,
-        content: str,
-        author_id: str,
-    ) -> DocsPageRef:
-        external_id = f"mock-docs-{project_id}-{task_id}"
-        return DocsPageRef(
-            task_id=task_id,
-            page_external_id=external_id,
-            title=task_title,
-            url=f"https://mock.docs.local/projects/{project_id}/tasks/{task_id}",
-        )
-
-    def get_page(self, project_id: int, page_external_id: str) -> DocsPageRef:
-        return DocsPageRef(
-            task_id=0,
-            page_external_id=page_external_id,
-            title=page_external_id,
-            url=f"https://mock.docs.local/projects/{project_id}/pages/{page_external_id}",
-        )
 
 
 class MockRoleService:
@@ -72,7 +36,6 @@ class DocsService:
         self.role_service = MockRoleService()
         self.task_history_service = MockTaskHistoryService()
         self.notification_service = MockNotificationService()
-        self.docs_client = MockDocsIntegrationClient()
 
     def add_task_docs(
         self,
@@ -93,18 +56,11 @@ class DocsService:
                 "Docs already exist for this task",
             )
 
-        page_ref = self.docs_client.create_task_page(
-            project_id=project_id,
-            task_id=task_id,
-            task_title=title,
-            content=url,
-            author_id=actor_id,
-        )
         docs = Docs(
             task_id=task_id,
             title=title,
-            url=url or page_ref.url,
-            external_id=page_ref.page_external_id,
+            url=url,
+            external_id=f"external-docs-url-{project_id}-{task_id}",
         )
         saved = self.docs_repository.save(docs)
         self.task_history_service.add_history(task_id, actor_id, "DOCS_ADDED", title, saved.url)

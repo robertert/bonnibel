@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -5,11 +6,14 @@ from typing import Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.models import PullRequest, PullRequestStatus
+from app.core.models import PullRequest, PullRequestStatus, TaskStatus
 from app.modules.docs.service import DocsService, api_error
+from app.modules.integration.gateway import IntegrationGateway
+from app.modules.integration.models import IntegrationProvider
 from app.modules.pr.repository import PullRequestRepository, TaskLookupRepository
 
 MOCK_ACTOR_ID = "mock-user"
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -22,39 +26,6 @@ class GitPullRequestRef:
     url: str
     created_at: datetime
     updated_at: datetime
-
-
-class MockGitIntegrationClient:
-    def create_pull_request(
-        self,
-        project_id: int,
-        task_id: int,
-        title: str,
-        description: str,
-        source_branch: str,
-        target_branch: str,
-        reviewer_id: Optional[str],
-    ) -> GitPullRequestRef:
-        now = datetime.utcnow()
-        external_id = f"mock-pr-{project_id}-{task_id}"
-        return GitPullRequestRef(
-            pull_request_external_id=external_id,
-            task_id=task_id,
-            reviewer_id=reviewer_id,
-            status=PullRequestStatus.OPEN,
-            title=title,
-            url=f"https://mock.git.local/projects/{project_id}/pull-requests/{external_id}",
-            created_at=now,
-            updated_at=now,
-        )
-
-    def merge_pull_request(self, project_id: int, pull_request_external_id: str) -> None:
-        return None
-
-
-class MockJiraIntegrationClient:
-    def move_ticket_to_done(self, project_id: int, jira_ticket_key: Optional[str]) -> None:
-        return None
 
 
 class MockRoleService:
@@ -80,8 +51,7 @@ class PullRequestService:
         self.role_service = MockRoleService()
         self.task_history_service = MockTaskHistoryService()
         self.notification_service = MockNotificationService()
-        self.git_client = MockGitIntegrationClient()
-        self.jira_client = MockJiraIntegrationClient()
+        self.integration_gateway = IntegrationGateway(db)
 
     def create_pull_request(self, actor_id: str, project_id: int, task_id: int) -> PullRequest:
         self.role_service.require_permission(actor_id, project_id, "REVIEW_TASK")
@@ -98,7 +68,7 @@ class PullRequestService:
 
         title = f"PR for task {task.task_id}: {task.title}"
         source_branch = task.git_branch_name or f"task-{task.task_id}"
-        pr_ref = self.git_client.create_pull_request(
+        pr_ref = self._create_git_pull_request_best_effort(
             project_id=project_id,
             task_id=task_id,
             title=title,
@@ -107,6 +77,7 @@ class PullRequestService:
             target_branch="main",
             reviewer_id=task.reviewer_id,
         )
+        now = datetime.utcnow()
         pull_request = PullRequest(
             task_id=task_id,
             external_id=pr_ref.pull_request_external_id,
@@ -117,6 +88,8 @@ class PullRequestService:
             created_at=pr_ref.created_at,
             updated_at=pr_ref.updated_at,
         )
+        task.status = TaskStatus.IN_REVIEW
+        task.updated_at = now
         saved = self.pull_request_repository.save(pull_request)
         self.task_history_service.add_history(task_id, actor_id, "PULL_REQUEST_CREATED", title, saved.url)
         self.notification_service.notify("PULL_REQUEST_CREATED", task_id)
@@ -181,10 +154,15 @@ class PullRequestService:
                 "Pull request is not open",
             )
         task = self.task_repository.find_by_project_and_id(project_id, pull_request.task_id)
-        self.git_client.merge_pull_request(project_id, pull_request.external_id)
-        self.jira_client.move_ticket_to_done(project_id, task.jira_issue_key if task else None)
-        pull_request.status = PullRequestStatus.APPROVED
+        self._merge_git_pull_request_best_effort(project_id, pull_request.external_id, task.git_branch_name if task else None)
+        self._move_jira_ticket_done_best_effort(project_id, task.jira_issue_key if task else None)
+        pull_request.status = PullRequestStatus.MERGED
         pull_request.updated_at = datetime.utcnow()
+        pull_request.merged_at = pull_request.updated_at
+        if task is not None:
+            task.status = TaskStatus.DONE
+            task.closed_at = pull_request.updated_at
+            task.updated_at = pull_request.updated_at
         return self.pull_request_repository.save(pull_request)
 
     def reject_review(
@@ -201,8 +179,12 @@ class PullRequestService:
                 "PULL_REQUEST_NOT_OPEN",
                 "Pull request is not open",
             )
-        pull_request.status = PullRequestStatus.REJECTED
+        pull_request.status = PullRequestStatus.CLOSED
         pull_request.updated_at = datetime.utcnow()
+        task = self.task_repository.find_by_project_and_id(project_id, pull_request.task_id)
+        if task is not None:
+            task.status = TaskStatus.IN_PROGRESS
+            task.updated_at = pull_request.updated_at
         saved = self.pull_request_repository.save(pull_request)
         self.task_history_service.add_history(
             pull_request.task_id,
@@ -241,3 +223,93 @@ class PullRequestService:
         pull_request.merged_at = datetime.utcnow()
         pull_request.updated_at = pull_request.merged_at
         return self.pull_request_repository.save(pull_request)
+
+    def _create_git_pull_request_best_effort(
+        self,
+        project_id: int,
+        task_id: int,
+        title: str,
+        description: str,
+        source_branch: str,
+        target_branch: str,
+        reviewer_id: Optional[str],
+    ) -> GitPullRequestRef:
+        now = datetime.utcnow()
+        fallback = GitPullRequestRef(
+            pull_request_external_id=f"local-pr-{project_id}-{task_id}",
+            task_id=task_id,
+            reviewer_id=reviewer_id,
+            status=PullRequestStatus.OPEN,
+            title=title,
+            url=f"local://projects/{project_id}/tasks/{task_id}/pull-requests",
+            created_at=now,
+            updated_at=now,
+        )
+
+        if not self.integration_gateway.has(project_id, IntegrationProvider.GITHUB):
+            return fallback
+
+        try:
+            ref = self.integration_gateway.git.create_pull_request(
+                project_id=project_id,
+                task_id=task_id,
+                title=title,
+                description=description,
+                source_branch=source_branch,
+                target_branch=target_branch,
+                reviewer_id=reviewer_id,
+            )
+            return GitPullRequestRef(
+                pull_request_external_id=ref.pull_request_external_id or fallback.pull_request_external_id,
+                task_id=task_id,
+                reviewer_id=ref.reviewer_id or reviewer_id,
+                status=PullRequestStatus.OPEN,
+                title=ref.title or title,
+                url=ref.url or fallback.url,
+                created_at=ref.created_at or now,
+                updated_at=ref.updated_at or now,
+            )
+        except Exception as exc:
+            logger.warning(
+                "GitHub create_pull_request failed for task %s: %r",
+                task_id,
+                exc,
+            )
+            return fallback
+
+    def _merge_git_pull_request_best_effort(
+        self,
+        project_id: int,
+        external_id: str,
+        branch_name: Optional[str],
+    ) -> None:
+        if not self.integration_gateway.has(project_id, IntegrationProvider.GITHUB):
+            return
+
+        try:
+            self.integration_gateway.git.merge_pull_request(project_id, external_id)
+            if branch_name:
+                self.integration_gateway.git.delete_branch(project_id, branch_name)
+        except Exception as exc:
+            logger.warning(
+                "GitHub merge/delete_branch failed for PR %s: %r",
+                external_id,
+                exc,
+            )
+
+    def _move_jira_ticket_done_best_effort(
+        self,
+        project_id: int,
+        jira_issue_key: Optional[str],
+    ) -> None:
+        if not jira_issue_key or not self.integration_gateway.has(project_id, IntegrationProvider.JIRA):
+            return
+
+        try:
+            self.integration_gateway.jira.move_ticket_to_done(project_id, jira_issue_key)
+        except Exception as exc:
+            logger.warning(
+                "Jira move_ticket_to_done failed for ticket %s: %r",
+                jira_issue_key,
+                exc,
+            )

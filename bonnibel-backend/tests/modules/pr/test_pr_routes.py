@@ -37,7 +37,7 @@ def test_create_pr_for_task_with_docs(db_session, seeded_task):
 
     assert pull_request.pull_request_id == 1
     assert pull_request.task_id == seeded_task.task_id
-    assert pull_request.external_id == "mock-pr-1-1"
+    assert pull_request.external_id == "local-pr-1-1"
     assert pull_request.reviewer_id == "reviewer-1"
     assert pull_request.status.value == "OPEN"
 
@@ -63,7 +63,7 @@ def test_get_pr_by_id(db_session, seeded_task):
         created.pull_request_id,
     )
 
-    assert pull_request.external_id == "mock-pr-1-1"
+    assert pull_request.external_id == "local-pr-1-1"
 
 
 def test_get_user_pull_requests_returns_reviewer_and_assignee_prs(db_session, seeded_task):
@@ -135,7 +135,7 @@ def test_get_user_pull_requests_returns_reviewer_and_assignee_prs(db_session, se
     assert {pull_request.external_id for pull_request in pull_requests} == {"pr-1", "pr-2"}
 
 
-def test_accept_open_pr_changes_status_to_approved(db_session, seeded_task):
+def test_accept_open_pr_changes_status_to_merged(db_session, seeded_task):
     add_docs(db_session)
     created = create_pr(db_session)
 
@@ -145,10 +145,10 @@ def test_accept_open_pr_changes_status_to_approved(db_session, seeded_task):
         created.pull_request_id,
     )
 
-    assert pull_request.status.value == "APPROVED"
+    assert pull_request.status.value == "MERGED"
 
 
-def test_reject_open_pr_changes_status_to_rejected(db_session, seeded_task):
+def test_reject_open_pr_changes_status_to_closed(db_session, seeded_task):
     add_docs(db_session)
     created = create_pr(db_session)
 
@@ -159,7 +159,7 @@ def test_reject_open_pr_changes_status_to_rejected(db_session, seeded_task):
         "Needs changes",
     )
 
-    assert pull_request.status.value == "REJECTED"
+    assert pull_request.status.value == "CLOSED"
 
 
 def test_accept_non_open_pr_returns_conflict(db_session, seeded_task):

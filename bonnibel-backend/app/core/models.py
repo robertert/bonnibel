@@ -35,8 +35,6 @@ class TaskStatus(str, enum.Enum):
 
 class PullRequestStatus(str, enum.Enum):
     OPEN = "OPEN"
-    APPROVED = "APPROVED"
-    REJECTED = "REJECTED"
     MERGED = "MERGED"
     CLOSED = "CLOSED"
 
