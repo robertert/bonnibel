@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { integrationService, type ProjectIntegration } from '@/services/integrationService'
+import { projectService } from '@/services/projectService'
 import type { IntegrationProvider } from '@/types/domain'
 
 const PROVIDERS: { value: IntegrationProvider; label: string; hint: string; tokenHint: string }[] = [
@@ -13,6 +14,11 @@ export default function ProjectIntegrationsPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const pid = Number(projectId)
 
+  // System ról i autoryzacji (RBAC) - zostaje bez zmian
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  // Stany integracji
   const [integrations, setIntegrations] = useState<ProjectIntegration[]>([])
   const [loading, setLoading] = useState(true)
   const [provider, setProvider] = useState<IntegrationProvider>('GITHUB')
@@ -20,7 +26,26 @@ export default function ProjectIntegrationsPage() {
   const [accessToken, setAccessToken] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const load = () => {
+  // 1. Sprawdzanie uprawnień użytkownika (Tylko OWNER przejdzie dalej)
+  useEffect(() => {
+    const currentUserId = localStorage.getItem('userId')
+    if (!currentUserId) {
+      setHasAccess(false)
+      setAuthLoading(false)
+      return
+    }
+
+    projectService.listMembers(pid)
+      .then((members) => {
+        const me = members.find(m => m.userId === currentUserId)
+        setHasAccess(me?.role === 'OWNER')
+      })
+      .catch(() => setHasAccess(false))
+      .finally(() => setAuthLoading(false))
+  }, [pid])
+
+  // 2. Ładowanie integracji
+  const loadIntegrations = () => {
     setLoading(true)
     integrationService.list(pid)
       .then(setIntegrations)
@@ -28,7 +53,11 @@ export default function ProjectIntegrationsPage() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(load, [pid])
+  useEffect(() => {
+    if (hasAccess) {
+      loadIntegrations()
+    }
+  }, [hasAccess, pid])
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,7 +71,7 @@ export default function ProjectIntegrationsPage() {
       })
       setExternalId('')
       setAccessToken('')
-      load()
+      loadIntegrations()
     } catch (err) {
       console.error('Nie udało się podłączyć integracji', err)
       window.alert('Nie udało się podłączyć integracji.')
@@ -55,13 +84,33 @@ export default function ProjectIntegrationsPage() {
     if (!window.confirm(`Odłączyć integrację ${p}?`)) return
     try {
       await integrationService.disconnect(pid, p)
-      load()
+      loadIntegrations()
     } catch (err) {
       console.error('Nie udało się odłączyć integracji', err)
       window.alert('Nie udało się odłączyć integracji.')
     }
   }
 
+  // WIDOKI KONTROLNE (Autoryzacja RBAC)
+  if (authLoading) {
+    return <div className="p-8 text-gray-500 text-center">Weryfikacja uprawnień…</div>
+  }
+
+  if (hasAccess === false) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto">
+        <Link to={`/projects/${projectId}`} className="text-sm text-blue-600 hover:text-blue-800">← Powrót do projektu</Link>
+        <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6 text-center shadow-sm">
+          <h2 className="text-lg font-semibold text-red-800 mb-2">Brak uprawnień</h2>
+          <p className="text-sm text-red-600">
+            Tylko <strong>Właściciel (OWNER)</strong> projektu może przeglądać i zarządżać integracjami tego projektu.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // GŁÓWNY WIDOK DLA UPRAWNIONEGO UŻYTKOWNIKA (OWNER)
   const currentProvider = PROVIDERS.find((p) => p.value === provider)
   const currentHint = currentProvider?.hint
 
@@ -69,9 +118,9 @@ export default function ProjectIntegrationsPage() {
     <div className="p-8 max-w-2xl">
       <Link to={`/projects/${projectId}`} className="text-sm text-gray-500 hover:text-gray-700">← Powrót do projektu</Link>
       <h1 className="mt-3 text-2xl font-semibold text-gray-900">Integracje projektu</h1>
-      <p className="text-sm text-gray-500 mt-1 mb-6">Token dotyczy tego projektu i jest ustawiany przez właściciela.</p>
+      <p className="text-sm text-gray-500 mt-1 mb-6">Token dostępu dotyczy tego projektu i jest ustawiany przez właściciela.</p>
 
-      {/* Podłączone */}
+      {/* Podłączone integracje */}
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm mb-6">
         <h2 className="text-lg font-semibold mb-3">Podłączone</h2>
         {loading ? (
@@ -79,17 +128,19 @@ export default function ProjectIntegrationsPage() {
         ) : integrations.length === 0 ? (
           <p className="text-gray-500 text-sm">Brak podłączonych integracji.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-4">
             {integrations.map((i) => (
-              <li key={i.integration_id} className="flex items-center justify-between gap-3 border-b border-gray-100 pb-2 last:border-0">
-                <div>
-                  <span className="font-medium text-gray-900">{i.provider}</span>
-                  <span className="ml-2 text-sm text-gray-500">{i.external_id}</span>
-                  <span className={`ml-2 text-[11px] font-semibold px-2 py-0.5 rounded-full ${i.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {i.is_active ? 'aktywna' : 'nieaktywna'}
-                  </span>
+              <li key={i.integration_id} className="block border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <span className="font-medium text-gray-900">{i.provider}</span>
+                    <span className="ml-2 text-sm text-gray-500">{i.external_id}</span>
+                    <span className={`ml-2 text-[11px] font-semibold px-2 py-0.5 rounded-full ${i.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {i.is_active ? 'aktywna' : 'nieaktywna'}
+                    </span>
+                  </div>
+                  <button onClick={() => handleDisconnect(i.provider)} className="text-sm text-red-600 hover:text-red-800 font-medium">Odłącz</button>
                 </div>
-                <button onClick={() => handleDisconnect(i.provider)} className="text-sm text-red-600 hover:text-red-800">Odłącz</button>
               </li>
             ))}
           </ul>
@@ -101,24 +152,20 @@ export default function ProjectIntegrationsPage() {
         <h2 className="text-lg font-semibold">Podłącz integrację</h2>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Dostawca</label>
-          <select value={provider} onChange={(e) => setProvider(e.target.value as IntegrationProvider)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+          <select value={provider} onChange={(e) => setProvider(e.target.value as IntegrationProvider)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
             {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Identyfikator zewnętrzny</label>
-          <input value={externalId} onChange={(e) => setExternalId(e.target.value)} placeholder={currentHint}
-                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+          <input value={externalId} onChange={(e) => setExternalId(e.target.value)} placeholder={currentHint} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
         </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Token dostępu</label>
-          <input type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="••••••••"
-                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+          <input type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="••••••••" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
           <p className="mt-1 text-xs text-gray-400">Format: {currentProvider?.tokenHint}</p>
         </div>
-        <button type="submit" disabled={busy}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">
+        <button type="submit" disabled={busy} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">
           {busy ? 'Łączenie…' : 'Podłącz'}
         </button>
       </form>
