@@ -2,7 +2,14 @@ from sqlalchemy import select, delete, update
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from app.core.models import Project, ProjectMember, ProjectIntegration, ProjectRole, IntegrationProvider, WebhookSecret
+from app.core.models import (
+    Project, 
+    ProjectMember, 
+    ProjectIntegration, 
+    ProjectRole, 
+    IntegrationProvider, 
+    WebhookSecret
+)
 
 
 class ProjectRepository:
@@ -10,7 +17,11 @@ class ProjectRepository:
         self.db = db
 
     def create(self, owner_id: str, name: str, description: Optional[str] = None) -> Project:
-        project = Project(owner_id=owner_id, name=name, description=description)
+        project = Project(
+            owner_id=owner_id,
+            name=name,
+            description=description
+        )
         self.db.add(project)
         self.db.commit()
         self.db.refresh(project)
@@ -20,10 +31,13 @@ class ProjectRepository:
         return self.db.query(Project).filter(Project.project_id == project_id).first()
 
     def get_by_user_id(self, user_id: str) -> List[Project]:
-        return self.db.query(Project)\
-            .join(ProjectMember)\
-            .filter(ProjectMember.user_id == user_id)\
+        """Zwraca wszystkie projekty, w których użytkownik jest członkiem"""
+        return (
+            self.db.query(Project)
+            .join(ProjectMember)
+            .filter(ProjectMember.user_id == user_id)
             .all()
+        )
 
     def update(self, project: Project) -> Project:
         self.db.commit()
@@ -31,15 +45,23 @@ class ProjectRepository:
         return project
 
     def delete(self, project_id: int) -> None:
-        self.db.query(Project).filter(Project.project_id == project_id).delete()
-        self.db.commit()
+        """Usuwa projekt wraz z wszystkimi powiązanymi rekordami"""
+        # usuwamy powiązane webhook secrets
+        self.db.query(WebhookSecret).filter(
+            WebhookSecret.project_id == project_id
+        ).delete(synchronize_session=False)
 
-    def delete(self, project_id: int) -> None:
-        # usuwamy powiązane rekordy memberów
+        # usuwamy integracje projektu
+        self.db.query(ProjectIntegration).filter(
+            ProjectIntegration.project_id == project_id
+        ).delete(synchronize_session=False)
+
+        # usuwamy członków projektu
         self.db.query(ProjectMember).filter(
             ProjectMember.project_id == project_id
-        ).delete()
-        
+        ).delete(synchronize_session=False)
+
+        # usuwamy sam projekt
         self.db.query(Project).filter(Project.project_id == project_id).delete()
         self.db.commit()
 
@@ -49,16 +71,22 @@ class ProjectMemberRepository:
         self.db = db
 
     def create(self, project_id: int, user_id: str, role: ProjectRole) -> ProjectMember:
-        member = ProjectMember(project_id=project_id, user_id=user_id, role=role)
+        member = ProjectMember(
+            project_id=project_id,
+            user_id=user_id,
+            role=role
+        )
         self.db.add(member)
         self.db.commit()
         self.db.refresh(member)
         return member
 
     def get_by_project(self, project_id: int) -> List[ProjectMember]:
-        return self.db.query(ProjectMember)\
-            .filter(ProjectMember.project_id == project_id)\
+        return (
+            self.db.query(ProjectMember)
+            .filter(ProjectMember.project_id == project_id)
             .all()
+        )
 
     def get_by_user_and_project(self, project_id: int, user_id: str) -> Optional[ProjectMember]:
         return self.db.query(ProjectMember).filter(
@@ -92,7 +120,13 @@ class ProjectIntegrationRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, project_id: int, provider: IntegrationProvider, external_id: str, access_token: str) -> ProjectIntegration:
+    def create(
+        self, 
+        project_id: int, 
+        provider: IntegrationProvider, 
+        external_id: str, 
+        access_token: str
+    ) -> ProjectIntegration:
         integration = ProjectIntegration(
             project_id=project_id,
             provider=provider,
@@ -106,24 +140,32 @@ class ProjectIntegrationRepository:
         return integration
 
     def delete(self, project_id: int, provider: IntegrationProvider) -> None:
-        # Najpierw usuń zależne webhook_secrets (FK), potem samą integrację.
-        integration_ids = [
-            i.integration_id for i in self.db.query(ProjectIntegration).filter(
-                ProjectIntegration.project_id == project_id,
-                ProjectIntegration.provider == provider
-            ).all()
-        ]
-        if integration_ids:
+        """Usuwa integrację wraz z powiązanymi sekretami webhooków"""
+        # najpierw pobieramy ID integracji
+        integrations = self.db.query(ProjectIntegration).filter(
+            ProjectIntegration.project_id == project_id,
+            ProjectIntegration.provider == provider
+        ).all()
+
+        if integrations:
+            integration_ids = [i.integration_id for i in integrations]
+            
+            # usuwamy powiązane webhook secrets
             self.db.query(WebhookSecret).filter(
                 WebhookSecret.integration_id.in_(integration_ids)
             ).delete(synchronize_session=False)
-        self.db.query(ProjectIntegration).filter(
-            ProjectIntegration.project_id == project_id,
-            ProjectIntegration.provider == provider
-        ).delete(synchronize_session=False)
+
+            # usuwamy integracje
+            self.db.query(ProjectIntegration).filter(
+                ProjectIntegration.project_id == project_id,
+                ProjectIntegration.provider == provider
+            ).delete(synchronize_session=False)
+
         self.db.commit()
 
-    def list_by_project(self, project_id: int) -> list[ProjectIntegration]:
-        return self.db.query(ProjectIntegration).filter(
-            ProjectIntegration.project_id == project_id
-        ).all()
+    def list_by_project(self, project_id: int) -> List[ProjectIntegration]:
+        return (
+            self.db.query(ProjectIntegration)
+            .filter(ProjectIntegration.project_id == project_id)
+            .all()
+        )
