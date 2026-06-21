@@ -66,8 +66,8 @@ auth            → rejestracja + login
 projects-members→ utwórz projekt "demo"
 integrations    → podłącz GitHub (+ Jira/Confluence)
 projects-members→ dodaj członków + role
-profile-tasks   → profil/status; utwórz zadanie; PRZYPISZ wykonawcę  ──► gałąź+commit na GitHubie
-pr-docs         → Utwórz PR (realny PR na GH); docs; Reviews → Akceptuj ──► merge na GH + zadanie DONE
+profile-tasks   → profil/status; utwórz zadanie; przypisz wykonawcę i recenzenta
+pr-docs         → dodaj docs → utwórz PR w Bonnibel → Reviews → approve/reject
 analitycs-chat  → czat w zadaniu; analityka (na "Bonnibel Core")
 notification    → powiadomienia na żywo (WS); subskrypcje; presence
 integrations    → webhook z podpisem (Hook Auth): poprawny → 202, zły → 401

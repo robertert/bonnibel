@@ -3,7 +3,7 @@
 **Co pokazuje** (dok.: *Integration Module* + *Hook Auth Module* + diagram sekwencji hooka):
 - Podłączanie/odłączanie integracji projektu: **GitHub, Jira, Confluence**.
 - Realne efekty na GitHubie: **gałąź + commit** (przy przypisaniu zadania), **merge** (przy akceptacji PR).
-- Jira: przejście statusu ticketu; Confluence: utworzenie strony docs.
+- Jira: przejście statusu ticketu; Confluence: podłączany jako integracja projektu, ale `pr-docs` zapisuje link podany przez użytkownika i nie tworzy strony automatycznie.
 - **Webhooki + Hook Auth**: weryfikacja podpisu HMAC (zaufane źródło).
 
 **Wymagania wstępne:** projekt (z `projects-members`), realny token GitHub (PAT) i repo `owner/repo` z commitem na `main`. Opcjonalnie token Atlassian.
@@ -15,12 +15,13 @@
 3. **Jira**: external_id = `https://twojadomena.atlassian.net`, Token = `email:api_token`.
 4. **Confluence**: external_id = `https://twojadomena.atlassian.net/wiki`, Token = `email:api_token`.
 
-## Realny przepływ GitHub (sedno demo)
-> Wymaga modułu `profile-tasks` (utworzenie + przypisanie zadania) i `pr-docs` (PR). Tu pokazujemy **efekty na GitHubie**.
+## Przepływ GitHub / PR
+> `pr-docs` korzysta z modułu `integration` w trybie best-effort: przy podłączonym GitHubie tworzy realny PR i próbuje merge przy approve, a bez tokenów zostawia lokalny rekord w bazie.
 
 1. W `profile-tasks`: utwórz zadanie i **przypisz wykonawcę** → na GitHubie pojawia się **gałąź** `bon-{taskId}-{user}` **z plikiem** `.bonnibel/...md` (auto-commit, żeby PR miał diff).
-2. W `pr-docs`: **Utwórz PR** → realny **Pull Request** na GitHubie (zadanie → IN_REVIEW).
-3. W `pr-docs`: **Akceptuj** → realny **merge** + usunięcie gałęzi + zadanie **DONE**.
+2. W `pr-docs`: **Dodaj docs** → użytkownik podaje tytuł i URL dokumentacji utworzonej poza Bonnibel.
+3. W `pr-docs`: **Utwórz PR** → przy aktywnym GitHubie powstaje realny Pull Request; bez GitHuba PR zapisuje się lokalnie jako `OPEN`.
+4. W `pr-docs`: **Approve/Reject** → approve próbuje merge na GitHubie i ustawia `MERGED`; reject ustawia `CLOSED`.
 
 ## Webhooki / Hook Auth (przychodzące zdarzenia)
 Sekret dla projektu 1 z seeda: **`demo-webhook-secret`** (GitHub). Pokaż weryfikację podpisu:

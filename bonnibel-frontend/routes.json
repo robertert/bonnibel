@@ -1,4 +1,11 @@
 {
+  "/projects/:projectId/tasks/:taskId/docs": "/docs?taskId=:taskId",
+  "/projects/:projectId/docs": "/docs?projectId=:projectId",
+  "/projects/:projectId/tasks/:taskId/pull-requests": "/pullRequests",
+  "/projects/:projectId/pull-requests/:pullRequestId/accept": "/pullRequests/:pullRequestId",
+  "/projects/:projectId/pull-requests/:pullRequestId/reject": "/pullRequests/:pullRequestId",
+  "/projects/:projectId/pull-requests/:pullRequestId": "/pullRequests/:pullRequestId",
+  "/projects/:projectId/pull-requests": "/pullRequests?projectId=:projectId",
   "/projects/:projectId/tasks/:id/status": "/tasks/:id",
   "/projects/:projectId/tasks/:id/assign": "/tasks/:id",
   "/projects/:projectId/tasks/:id/reviewer": "/tasks/:id",
