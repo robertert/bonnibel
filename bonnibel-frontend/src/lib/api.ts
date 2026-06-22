@@ -1,5 +1,7 @@
-// RĘCZNY BASE URL: Wpisany na sztywno port 8000 dla Twojego backendu w Pythonie
-export const API_BASE_URL = 'http://localhost:8000/api'
+// BASE URL z .env (VITE_API_BASE_URL, domyślnie http://localhost:3001) + prefiks /api.
+import { API_BASE_URL as API_ORIGIN } from '@/lib/env'
+
+export const API_BASE_URL = `${API_ORIGIN}/api`
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers)

@@ -1,27 +1,46 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { projectService, type ProjectSummary } from '@/services/projectService'
+import { projectService, type ProjectSummary, type ProjectRole } from '@/services/projectService'
 
 export default function ProjectDetailsPage() {
   const { projectId } = useParams<{ projectId: string }>()
+  const pid = Number(projectId)
+  
   const [project, setProject] = useState<ProjectSummary | null>(null)
+  const [userRole, setUserRole] = useState<ProjectRole | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    projectService.list()
-      .then((projects) => {
-        setProject(projects.find((p) => String(p.projectId) === projectId) ?? null)
+    const currentUserId = localStorage.getItem('userId')
+    
+    // Pobieramy równolegle dane projektu i listę członków
+    Promise.all([
+      projectService.list(),
+      projectService.listMembers(pid)
+    ])
+      .then(([projects, members]) => {
+        setProject(projects.find((p) => p.projectId === pid) ?? null)
+        
+        // Szukamy zalogowanego użytkownika na liście członków projektu
+        const me = members.find(m => m.userId === currentUserId)
+        if (me) {
+          setUserRole(me.role)
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [projectId])
+  }, [pid])
 
+  // Dynamiczne budowanie linków - Integracje widzi tylko OWNER
   const links = [
     { to: `/projects/${projectId}/tasks`, label: 'Zadania' },
     { to: `/projects/${projectId}/members`, label: 'Członkowie' },
     { to: `/projects/${projectId}/analytics`, label: 'Analityka' },
-    { to: `/projects/${projectId}/integrations`, label: 'Integracje' },
   ]
+  
+  if (userRole === 'OWNER') {
+    links.push({ to: `/projects/${projectId}/integrations`, label: 'Integracje' })
+  }
 
   if (loading) return <div className="p-8 text-gray-500">Wczytywanie…</div>
 

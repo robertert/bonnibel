@@ -1,9 +1,10 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.models import User
+from app.core.models import NotificationType, Task, User
 from app.modules.chat.repository import ChatRepository
-from app.modules.notification.manager import chat_manager
+from app.modules.notification.manager import chat_manager, notification_service
+from app.modules.notification.schemas import NotificationEventCreate
 
 
 class ChatService:
@@ -39,6 +40,22 @@ class ChatService:
         payload = self._serialize(message, emails.get(author_id))
         # Rozgłoś nową wiadomość do wszystkich nasłuchujących WS na tym zadaniu.
         await chat_manager.broadcast(task_id, {"type": "created", "message": payload})
+        # Powiadom obserwatorów zadania (autor jest wykluczony przez resolver).
+        task = db.get(Task, task_id)
+        event = NotificationEventCreate(
+            type=NotificationType.CHAT_MESSAGE,
+            task_id=task_id,
+            project_id=task.project_id if task else None,
+            actor_id=author_id,
+            title="Nowa wiadomość",
+            message=f"Nowa wiadomość w zadaniu #{task_id}",
+            link_url=f"/projects/{task.project_id}/tasks/{task_id}" if task else f"/tasks/{task_id}",
+        )
+        try:
+            await notification_service.create_from_event(db, event)
+        except Exception:
+            # Powiadomienie jest best-effort — nie blokuj wysłania wiadomości.
+            pass
         return payload
 
     async def update_message(self, db: Session, message_id: int, current_user_id: str, text: str,):

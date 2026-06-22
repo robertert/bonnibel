@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { notificationService, openNotificationSocket } from '@/services/notificationService'
 import { useNotificationStore } from '@/store/notificationStore'
@@ -34,6 +35,7 @@ function formatDate(iso: string): string {
 
 export default function NotificationsPage() {
   const [filter, setFilter] = useState<Filter>('all')
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { notifications: liveNotifications, markOneRead, markAllRead, setUnreadCount, decrementUnreadCount, prependNotification, incrementUnreadCount } = useNotificationStore()
   const userId = useAuthStore((s) => s.userId)
@@ -104,6 +106,12 @@ export default function NotificationsPage() {
     }
   }
 
+  function handleGoTo(n: Notification) {
+    // Oznacz jako przeczytane i przejdź do źródła powiadomienia.
+    if (!n.isRead) handleMarkRead(n)
+    if (n.linkUrl) navigate(n.linkUrl)
+  }
+
   const unreadTotal = merged.filter((n) => !n.isRead).length
 
   return (
@@ -168,6 +176,17 @@ export default function NotificationsPage() {
                 <p className="text-sm font-medium text-gray-900 truncate">{n.title}</p>
                 <p className="text-sm text-gray-500 truncate">{n.message}</p>
               </div>
+              {n.linkUrl && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleGoTo(n)
+                  }}
+                  className="self-center shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                >
+                  GO TO
+                </button>
+              )}
             </li>
           ))}
         </ul>

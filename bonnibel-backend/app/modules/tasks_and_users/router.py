@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.dependencies.auth import CurrentUserId
 from app.modules.tasks_and_users.schemas import (
     CreateTaskRequest,
     ProjectOut,
@@ -77,23 +78,23 @@ def read_task(project_id: int, task_id: int, db: Session = Depends(get_db)) -> T
 
 
 @router.post("/projects/{project_id}/tasks", response_model=TaskOut, status_code=status.HTTP_201_CREATED)
-def add_task(project_id: int, payload: CreateTaskRequest, db: Session = Depends(get_db)) -> TaskOut:
-    return create_task(db, project_id, payload)
+async def add_task(project_id: int, payload: CreateTaskRequest, current_user_id: CurrentUserId, db: Session = Depends(get_db)) -> TaskOut:
+    return await create_task(db, project_id, payload, current_user_id)
 
 
 @router.patch("/projects/{project_id}/tasks/{task_id}/status", response_model=TaskOut)
-def patch_task_status(project_id: int, task_id: int, payload: UpdateTaskStatusRequest, db: Session = Depends(get_db)) -> TaskOut:
-    return update_task_status(db, project_id, task_id, payload)
+async def patch_task_status(project_id: int, task_id: int, payload: UpdateTaskStatusRequest, current_user_id: CurrentUserId, db: Session = Depends(get_db)) -> TaskOut:
+    return await update_task_status(db, project_id, task_id, payload, current_user_id)
 
 
 @router.patch("/projects/{project_id}/tasks/{task_id}/assign", response_model=TaskOut)
-def patch_task_assignee(project_id: int, task_id: int, payload: UpdateTaskAssigneeRequest, db: Session = Depends(get_db)) -> TaskOut:
-    return assign_task(db, project_id, task_id, payload)
+async def patch_task_assignee(project_id: int, task_id: int, payload: UpdateTaskAssigneeRequest, current_user_id: CurrentUserId, db: Session = Depends(get_db)) -> TaskOut:
+    return await assign_task(db, project_id, task_id, payload, current_user_id)
 
 
 @router.patch("/projects/{project_id}/tasks/{task_id}/reviewer", response_model=TaskOut)
-def patch_task_reviewer(project_id: int, task_id: int, payload: UpdateTaskReviewerRequest, db: Session = Depends(get_db)) -> TaskOut:
-    return assign_reviewer(db, project_id, task_id, payload)
+async def patch_task_reviewer(project_id: int, task_id: int, payload: UpdateTaskReviewerRequest, current_user_id: CurrentUserId, db: Session = Depends(get_db)) -> TaskOut:
+    return await assign_reviewer(db, project_id, task_id, payload, current_user_id)
 
 
 @router.post("/projects/{project_id}/tasks/{task_id}/request-close", status_code=status.HTTP_204_NO_CONTENT)

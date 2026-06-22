@@ -67,7 +67,7 @@ class RecipientResolver:
             recipients.update(user_id for user_id in [assignee_id, reviewer_id, owner_id] if user_id)
             recipients.update(self._subscribers(db, event.task_id))
         elif event.type == NotificationType.PR_CREATED:
-            recipients.update(user_id for user_id in [reviewer_id, owner_id] if user_id)
+            recipients.update(user_id for user_id in [reviewer_id, owner_id, assignee_id] if user_id)
         elif event.type == NotificationType.PR_REVIEWED:
             recipients.update(user_id for user_id in [assignee_id, owner_id] if user_id)
         elif event.type == NotificationType.CHAT_MESSAGE:
