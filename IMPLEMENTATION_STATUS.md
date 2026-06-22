@@ -37,8 +37,8 @@ Legenda: ✅ działa · ◐ częściowo · ✗ brak
 | Obszar | Status | Co dodano |
 |---|---|---|
 | **TaskHistory** | ✅ | `app/modules/task_history/` + zapis zdarzeń (CREATED/STATUS_CHANGED/UPDATED) w `tasks_and_users/service.py` |
-| **Docs** | ✅ | `app/modules/docs/` — add/get docs (zapis do tabeli `docs`), best-effort Confluence |
-| **PullRequest** | ✅ | `app/modules/pull_requests/` — create/list/approve/decline, zmiana statusu zadania, powiadomienia PR_CREATED/PR_REVIEWED |
+| **Docs** | ✅ | `app/modules/docs/` — add/get/update docs (użytkownik zapisuje tytuł i URL dokumentacji w tabeli `docs`) |
+| **PullRequest** | ✅ | `app/modules/pr/` — create/list/get/reviews-scope/accept/reject, wymagane docs przed PR, statusy OPEN/MERGED/CLOSED, GitHub/Jira best-effort |
 | **Integration (klienci)** | ◐ | Klienci Git/Jira/Confluence podpięci przez `integration/gateway.py` (branch przy assign, PR create/merge, Jira transition, Confluence docs) — **best-effort/guarded**: bez aktywnej integracji lub przy błędzie HTTP zapis idzie lokalnie |
 | **Hook Auth + webhooki** | ✅ | `app/modules/hook_auth/` — `SignatureVerifier`(Git/Jira HMAC) + `Factory` + `SecretRepository` + `HookAuthService`; `POST /api/hooks/{provider}/{project_id}` weryfikuje podpis i przetwarza zdarzenie |
 | **Online presence** | ✅ | `User.is_online` aktualizowane przy connect/disconnect WS powiadomień |
