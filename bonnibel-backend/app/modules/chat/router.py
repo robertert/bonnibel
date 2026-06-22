@@ -7,6 +7,12 @@ from app.dependencies.auth import get_current_user
 from app.modules.chat.schemas import SendMessageRequest, UpdateMessageRequest
 from app.modules.chat.service import ChatService
 from app.modules.notification.manager import chat_manager
+from app.core.models import ProjectRole
+from app.core.security import RoleChecker
+
+require_owner = RoleChecker([ProjectRole.OWNER])
+require_developer_or_owner = RoleChecker([ProjectRole.OWNER, ProjectRole.DEVELOPER])
+require_any_member = RoleChecker([ProjectRole.OWNER, ProjectRole.DEVELOPER, ProjectRole.REVIEWER])
 
 router = APIRouter()
 service = ChatService()

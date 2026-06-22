@@ -2,6 +2,13 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
+from app.core.models import ProjectRole
+from app.core.security import RoleChecker
+
+require_owner = RoleChecker([ProjectRole.OWNER])
+require_developer_or_owner = RoleChecker([ProjectRole.OWNER, ProjectRole.DEVELOPER])
+require_any_member = RoleChecker([ProjectRole.OWNER, ProjectRole.DEVELOPER, ProjectRole.REVIEWER])
+
 
 from app.core.database import get_db
 from app.modules.tasks_and_users.schemas import (
@@ -72,12 +79,12 @@ def read_project_tasks(
 
 
 @router.get("/projects/{project_id}/tasks/{task_id}", response_model=TaskOut)
-def read_task(project_id: int, task_id: int, db: Session = Depends(get_db)) -> TaskOut:
+def read_task(project_id: int, task_id: int, db: Session = Depends(get_db), membership = Depends(require_any_member)) -> TaskOut:
     return get_task(db, project_id, task_id)
 
 
 @router.post("/projects/{project_id}/tasks", response_model=TaskOut, status_code=status.HTTP_201_CREATED)
-def add_task(project_id: int, payload: CreateTaskRequest, db: Session = Depends(get_db)) -> TaskOut:
+def add_task(project_id: int, payload: CreateTaskRequest, db: Session = Depends(get_db), membership = Depends(require_any_member)) -> TaskOut:
     return create_task(db, project_id, payload)
 
 
